@@ -2,18 +2,28 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import electron from 'vite-plugin-electron/simple'
 
+const electronOutput = '**/dist-electron/**'
+
 // 某些基于 Electron 的 IDE 终端会注入此变量；否则插件会把 Electron 解析为 Node。
 delete process.env.ELECTRON_RUN_AS_NODE
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   server: {
     strictPort: true,
+    watch: {
+      ignored: [electronOutput],
+    },
   },
   plugins: [
     react(),
     electron({
       main: {
         entry: 'electron/main.ts',
+        vite: {
+          build: {
+            watch: command === 'serve' ? { exclude: electronOutput } : null,
+          },
+        },
         async onstart({ startup }) {
           const environment = { ...process.env }
           delete environment.ELECTRON_RUN_AS_NODE
@@ -22,7 +32,12 @@ export default defineConfig({
       },
       preload: {
         input: 'electron/preload.ts',
+        vite: {
+          build: {
+            watch: command === 'serve' ? { exclude: electronOutput } : null,
+          },
+        },
       },
     }),
   ],
-})
+}))

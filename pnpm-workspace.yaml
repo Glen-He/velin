@@ -1,2 +1,8 @@
-onlyBuiltDependencies:
-  - electron
+packages:
+  - apps/*
+
+allowBuilds:
+  electron: true
+  esbuild: true
+minimumReleaseAgeExclude:
+  - nodemailer@10.0.11
