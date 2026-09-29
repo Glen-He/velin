@@ -283,11 +283,12 @@ Main
 - 需要说明的层次写在批次里，不写进 message：例如 `docs: document commit message format`，而不是 `docs(agents.md): ...`。
 - 不使用 `body`：动机与权衡放在 PR 描述或交接文档里，message 只保留一行。
 - 不加 emoji、`Co-Authored-By`、会话编号或任何自动生成的署名。
-- 现有提交是本仓库 message 格式的参照，新 message 必须与历史保持同一形式，例如 `chore: set up pnpm monorepo workspace and build pipeline`、`feat: add server-side DeepSeek streaming chat proxy with usage limits`、`docs: add project handoff guide`。
+- 现有提交是本仓库 message 格式的参照，新 message 必须与历史保持同一形式，例如 `chore: set up pnpm monorepo workspace and build pipeline`、`feat: add server-side DeepSeek streaming chat proxy with usage limits`、`docs: document engineering rules and architecture`。
 - 一次提交只表达一个可审查的意图，并按依赖层顺序分批：工作区配置 → 跨端协议与设计令牌 → 认证服务 → 浏览器认证页 → Electron 主进程 → 桌面渲染层 → 测试与文档。
 - 集成点文件（`electron/main.ts`、`electron/preload.ts`、各端 `App.tsx`、`apps/auth-server/src/server.ts`）放在所属分组的最后提交，让前面的提交在被引用组件尚不存在时仍保持树可用、历史可二分。
 - 提交前必须确认工作区已包含本次范围内的全部改动且无遗留：`git status --short`；只按文件名 `git add`，禁止 `git add -A`、`git add .` 和交互式暂存。
 - 不提交 `.env.local`、`dist/`、`dist-electron/`、`node_modules/`、密钥或任何真实凭据；发现可疑内容先停止并核对文件正文。
+- 提交和推送前先判断文件的对外可见性：交接笔记、任务清单、未完成功能与安全边界分析、临时验证脚本属于本地工作文件，不得入库或公开；仓库只收产品代码、构建配置、面向使用者的 README 和本工程规范。这类工作文件一律写进 `.gitignore`，不能只靠“这次没 add”来约束。
 - 不自动 commit、不自动 push、不 amend 已被他人拉取的提交、不重写历史、不创建或修改 remote。
 
 ## 任务边界
