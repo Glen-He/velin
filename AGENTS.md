@@ -277,12 +277,13 @@ Main
 
 ## Git 提交规范
 
-- 提交信息使用 Conventional Commits：`<type>(<scope>): <subject>`；无 `scope` 时写成 `<type>: <subject>`。
-- `type` 只从 `feat`、`fix`、`refactor`、`perf`、`style`、`docs`、`test`、`build`、`chore` 中选，不得新造。
-- `scope` 只用小写包名，当前为 `shared`、`auth-server`、`auth-web`、`electron`、`desktop`；同一提交跨多个包时属于集成改动，选最主要的包；仓库级配置与文档改动省略 `scope`。
-- `subject` 用中文、动词开头，只描述这一提交达成的意图，不超过 20 个汉字，结尾不加句号；禁止 `fix`、`update`、`修改代码`、`日常提交` 这类无信息措辞，也禁止罗列文件名或堆砌实现细节。
-- `body` 可选，只在动机、权衡或影响范围无法从 `subject` 看出时书写：与 `subject` 空一行，用 `-` 列点，每行不超过 72 字符。
+- 提交信息使用 Conventional Commits 的单行形式：`<type>: <subject>`；`type` 后面禁止括号 scope，跨包或集成改动也不得加回 scope，靠提交顺序和分批表达层次。
+- `type` 只从 `feat`、`fix`、`refactor`、`perf`、`style`、`docs`、`test`、`build`、`chore` 中选，不得新造，并保持小写。
+- `subject` 必须是一句英文：小写开头、动词起头、结尾不加句号，整行不超过 72 字符。禁止 `fix`、`update`、`misc`、`wip` 这类无信息措辞，禁止罗列文件名。
+- 需要说明的层次写在批次里，不写进 message：例如 `docs: document commit message format`，而不是 `docs(agents.md): ...`。
+- 不使用 `body`：动机与权衡放在 PR 描述或交接文档里，message 只保留一行。
 - 不加 emoji、`Co-Authored-By`、会话编号或任何自动生成的署名。
+- 现有提交是本仓库 message 格式的参照，新 message 必须与历史保持同一形式，例如 `chore: set up pnpm monorepo workspace and build pipeline`、`feat: add server-side DeepSeek streaming chat proxy with usage limits`、`docs: add project handoff guide`。
 - 一次提交只表达一个可审查的意图，并按依赖层顺序分批：工作区配置 → 跨端协议与设计令牌 → 认证服务 → 浏览器认证页 → Electron 主进程 → 桌面渲染层 → 测试与文档。
 - 集成点文件（`electron/main.ts`、`electron/preload.ts`、各端 `App.tsx`、`apps/auth-server/src/server.ts`）放在所属分组的最后提交，让前面的提交在被引用组件尚不存在时仍保持树可用、历史可二分。
 - 提交前必须确认工作区已包含本次范围内的全部改动且无遗留：`git status --short`；只按文件名 `git add`，禁止 `git add -A`、`git add .` 和交互式暂存。
