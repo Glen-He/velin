@@ -26,11 +26,23 @@ test('a held drag can collapse, restore, and collapse again with hysteresis', ()
   }
 
   assert.equal(
-    getSidebarDragDecision(drag, 200, minimumWidth, minimumWidth, collapseDistance),
+    getSidebarDragDecision(
+      drag,
+      200,
+      minimumWidth,
+      minimumWidth,
+      collapseDistance,
+    ),
     null,
   )
   assert.equal(
-    getSidebarDragDecision(drag, 188, minimumWidth, minimumWidth, collapseDistance),
+    getSidebarDragDecision(
+      drag,
+      188,
+      minimumWidth,
+      minimumWidth,
+      collapseDistance,
+    ),
     'collapse',
   )
 
@@ -46,7 +58,13 @@ test('a held drag can collapse, restore, and collapse again with hysteresis', ()
 
   drag.phase = 'restored'
   assert.equal(
-    getSidebarDragDecision(drag, 188, minimumWidth, minimumWidth, collapseDistance),
+    getSidebarDragDecision(
+      drag,
+      188,
+      minimumWidth,
+      minimumWidth,
+      collapseDistance,
+    ),
     'collapse',
   )
 })

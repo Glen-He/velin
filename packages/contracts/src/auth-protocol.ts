@@ -1,3 +1,5 @@
+import type { SessionClientMetadata } from './session-client.js'
+
 export type AuthUser = {
   id: string
   name: string
@@ -13,13 +15,15 @@ export type AuthState = {
 }
 
 export type DesktopSession = {
-  token: string
+  id: string
   isCurrent: boolean
   ipAddress: string | null
   userAgent: string | null
   createdAt: string
   updatedAt: string
   expiresAt: string
+  // 本机自己报的身份，只用于展示；缺失时识别退回 UA，且永不参与授权。
+  clientMetadata?: SessionClientMetadata | null
 }
 
 export type AuthError = {

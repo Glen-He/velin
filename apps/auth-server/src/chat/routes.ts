@@ -1,7 +1,7 @@
 import { streamSSE } from 'hono/streaming'
 import type { Hono } from 'hono'
 import OpenAI, { APIConnectionError, APIError } from 'openai'
-import { z } from 'zod'
+import { chatRequestSchema } from '@velin/contracts/chat-validation'
 import { auth } from '../auth.js'
 import { config } from '../config.js'
 import {
@@ -10,22 +10,6 @@ import {
   type ChatLimitReason,
   type ChatRequestStatus,
 } from './usage.js'
-
-const promptMessageSchema = z.object({
-  role: z.enum(['user', 'assistant']),
-  content: z.string().min(1).max(8_000).refine((value) => value.trim().length > 0),
-}).strict()
-
-const chatRequestSchema = z.object({
-  requestId: z.uuid(),
-  conversationId: z.uuid(),
-  messages: z.array(promptMessageSchema).min(1).max(32),
-}).strict().refine(
-  (request) =>
-    request.messages.at(-1)?.role === 'user' &&
-    request.messages.reduce((size, message) => size + message.content.length, 0) <=
-      32_000,
-)
 
 const deepseek = config.chat.deepseekApiKey
   ? new OpenAI({
@@ -80,7 +64,9 @@ export function registerChatRoutes(app: Hono) {
       return context.json({ message: '请求来源或格式无效。' }, 403)
     }
 
-    const session = await auth.api.getSession({ headers: context.req.raw.headers })
+    const session = await auth.api.getSession({
+      headers: context.req.raw.headers,
+    })
     if (!session) {
       return context.json({ message: '请先登录后再发送消息。' }, 401)
     }
@@ -181,9 +167,10 @@ export function registerChatRoutes(app: Hono) {
           })
         }
       } catch (error) {
-        status = controller.signal.reason === 'client-disconnected'
-          ? 'cancelled'
-          : 'failed'
+        status =
+          controller.signal.reason === 'client-disconnected'
+            ? 'cancelled'
+            : 'failed'
 
         if (!stream.aborted && status !== 'cancelled') {
           await stream.writeSSE({
@@ -193,9 +180,10 @@ export function registerChatRoutes(app: Hono) {
               requestId: request.requestId,
               conversationId: request.conversationId,
               messageId,
-              message: controller.signal.reason === 'timeout'
-                ? '生成超时，请重试。'
-                : upstreamMessage(error),
+              message:
+                controller.signal.reason === 'timeout'
+                  ? '生成超时，请重试。'
+                  : upstreamMessage(error),
             }),
           })
         }

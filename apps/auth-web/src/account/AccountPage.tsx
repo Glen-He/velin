@@ -8,7 +8,7 @@ import {
   errorMessage,
   useArmConfirm,
 } from '../shared'
-import { LoadingState, Spinner } from '../shared-ui'
+import { LoadingState } from '../shared-ui'
 import { AvatarCropDialog } from './AvatarCropDialog'
 
 // 账号中心：身份（头像/用户名）与安全、会话入口。
@@ -94,7 +94,6 @@ export function AccountPage() {
       <header className="security-header">
         <div className="security-header-slot" />
         <h1>账号中心</h1>
-        <p>{user.email}</p>
       </header>
 
       <section className="account-section">
@@ -104,7 +103,6 @@ export function AccountPage() {
             className="account-avatar-button"
             type="button"
             aria-label="更换头像"
-            title="更换头像"
             onClick={() => setAvatarDialogOpen(true)}
           >
             <span className="account-avatar-lg" aria-hidden="true">
@@ -128,7 +126,7 @@ export function AccountPage() {
             >
               <input
                 autoFocus
-                className="name-input"
+                className="web-field"
                 type="text"
                 value={nameDraft}
                 maxLength={32}
@@ -148,39 +146,41 @@ export function AccountPage() {
               >
                 {nameError ?? `${nameDraft.trim().length}/32`}
               </span>
-              <button
-                className="security-action is-outline is-narrow"
-                type="button"
-                disabled={isSavingName}
-                onClick={cancelNameEdit}
-              >
-                取消
-              </button>
-              <button
-                className="security-action is-primary is-narrow"
-                type="submit"
-                disabled={isSavingName || nameDraft.trim() === displayName}
-              >
-                {isSavingName ? <Spinner /> : '保存'}
-              </button>
-            </form>
-            ) : (
-              <div className="account-identity-copy">
-                <div className="account-identity-name">
-                  <span>{displayName}</span>
-                  <button
-                    className="icon-pencil"
-                    type="button"
-                    aria-label="修改用户名"
-                    title="修改用户名"
-                    onClick={startNameEdit}
-                  >
-                    <Pencil aria-hidden="true" />
-                  </button>
-                </div>
-                <div className="account-identity-email">{user.email}</div>
+              <div className="name-editor-actions">
+                <button
+                  className="security-action is-outline is-narrow"
+                  type="button"
+                  disabled={isSavingName}
+                  onClick={cancelNameEdit}
+                >
+                  取消
+                </button>
+                <button
+                  className="security-action is-primary is-narrow"
+                  type="submit"
+                  disabled={isSavingName || nameDraft.trim() === displayName}
+                >
+                  保存
+                </button>
               </div>
-            )}
+            </form>
+          ) : (
+            <div className="account-identity-copy">
+              <div className="account-identity-name">
+                <span>{displayName}</span>
+                <button
+                  className="icon-pencil"
+                  type="button"
+                  aria-label="修改用户名"
+                  title="修改用户名"
+                  onClick={startNameEdit}
+                >
+                  <Pencil aria-hidden="true" />
+                </button>
+              </div>
+              <div className="account-identity-email">{user.email}</div>
+            </div>
+          )}
         </div>
       </section>
 
@@ -192,7 +192,10 @@ export function AccountPage() {
               <div className="session-name">登录与安全</div>
               <div className="session-meta">通行密钥、双重认证和密码。</div>
             </div>
-            <ChevronRight className="security-card-chevron" aria-hidden="true" />
+            <ChevronRight
+              className="security-card-chevron"
+              aria-hidden="true"
+            />
           </a>
         </div>
       </section>
@@ -205,7 +208,10 @@ export function AccountPage() {
               <div className="session-name">登录设备</div>
               <div className="session-meta">查看并退出登录中的设备。</div>
             </div>
-            <ChevronRight className="security-card-chevron" aria-hidden="true" />
+            <ChevronRight
+              className="security-card-chevron"
+              aria-hidden="true"
+            />
           </a>
           <div className="session-card">
             <div className="session-copy">

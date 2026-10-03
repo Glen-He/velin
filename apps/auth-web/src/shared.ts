@@ -1,15 +1,46 @@
-import { Laptop, Smartphone, Tablet } from 'lucide-react'
+import { normalizeSessionDate } from '@velin/contracts/value'
+import {
+  isValidNewPassword,
+  passwordPolicyMessage,
+} from '@velin/contracts/policy'
+export { normalizeSessionDate } from '@velin/contracts/value'
 import { useEffect, useState } from 'react'
-import type { LucideIcon } from 'lucide-react'
+
+// 设备识别只有一份实现：桌面端和网页端都吃 src/shared/session-client.ts 的结果。
+export {
+  formatSessionActivity,
+  formatSessionClient,
+  normalizeSessionClient,
+} from '@velin/contracts/session-client'
+export type { SessionClientIcon } from '@velin/contracts/session-client'
+
+// Better Auth 的部分错误文案是英文原文，直接显示会给中文界面夹生。
+const serverMessageCopy: ReadonlyArray<readonly [RegExp, string]> = [
+  [/too many requests/i, '尝试次数过多，请稍后再试。'],
+  [/invalid email or password/i, '邮箱或密码不正确。'],
+  [/no account found/i, '没有找到该账号。'],
+  [/email or password is required/i, '请填写邮箱和密码。'],
+  [/already pending/i, '上一次通行密钥请求还没有结束，请刷新页面后重试。'],
+]
 
 export function errorMessage(error: { message?: string } | null | undefined) {
-  return error?.message ?? '操作没有完成，请稍后重试。'
+  const message = error?.message?.trim()
+
+  if (!message) {
+    return '操作没有完成，请稍后重试。'
+  }
+
+  for (const [pattern, copy] of serverMessageCopy) {
+    if (pattern.test(message)) {
+      return copy
+    }
+  }
+
+  return message
 }
 
 export function newPasswordError(value: string) {
-  return /^[\x21-\x7e]{8,32}$/.test(value)
-    ? ''
-    : '密码需为 8–32 位英文字母、数字或符号。'
+  return isValidNewPassword(value) ? '' : passwordPolicyMessage
 }
 
 export function isApplePlatform() {
@@ -37,21 +68,33 @@ export function useArmConfirm(resetMs = 3000) {
   return { armed, arm: setArmed, disarm: () => setArmed(null) }
 }
 
-export function normalizeSessionDate(value: unknown): string {
-  if (value instanceof Date) {
-    return value.toISOString()
-  }
+// 重发冷却：生产对齐后端每分钟限流窗口，本地开发缩到 5 秒方便反复走流程。
+export const resendCooldownSeconds = import.meta.env.DEV ? 5 : 60
 
-  if (typeof value === 'string') {
-    return value
-  }
+export function useResendCooldown(seconds = resendCooldownSeconds) {
+  const [remaining, setRemaining] = useState(0)
 
-  if (typeof value === 'number') {
-    return new Date(value).toISOString()
-  }
+  useEffect(() => {
+    if (remaining <= 0) {
+      return
+    }
 
-  return ''
+    const timer = window.setTimeout(
+      () => setRemaining((value) => Math.max(0, value - 1)),
+      1000,
+    )
+
+    return () => window.clearTimeout(timer)
+  }, [remaining])
+
+  return {
+    remaining,
+    start: () => setRemaining(seconds),
+    clear: () => setRemaining(0),
+  }
 }
+
+export { useSendSlot } from './security/useSendSlot'
 
 export type WebSessionInfo = {
   token: string
@@ -85,110 +128,12 @@ export function normalizeSessions(
     sessions.push({
       token,
       isCurrent: token === currentToken,
-      userAgent:
-        typeof record.userAgent === 'string' ? record.userAgent : null,
+      userAgent: typeof record.userAgent === 'string' ? record.userAgent : null,
       updatedAt: normalizeSessionDate(record.updatedAt),
     })
   }
 
   return sessions
-}
-
-type DeviceDescription = {
-  platform: string
-  detail: string | null
-  icon: LucideIcon
-}
-
-function detectPlatformKind(userAgent: string) {
-  if (/iphone/i.test(userAgent)) return 'ios'
-  if (/ipad/i.test(userAgent)) return 'ipados'
-  if (/android/i.test(userAgent)) return 'android'
-  if (/windows/i.test(userAgent)) return 'windows'
-  if (/macintosh|mac os x/i.test(userAgent)) return 'mac'
-  if (/linux/i.test(userAgent)) return 'linux'
-  return null
-}
-
-function detectOsName(kind: ReturnType<typeof detectPlatformKind>) {
-  switch (kind) {
-    case 'mac':
-      return 'macOS'
-    case 'windows':
-      return 'Windows'
-    case 'linux':
-      return 'Linux'
-    case 'ios':
-      return 'iOS'
-    case 'ipados':
-      return 'iPadOS'
-    case 'android':
-      return 'Android'
-    default:
-      return null
-  }
-}
-
-function detectBrowser(userAgent: string) {
-  if (/edg\//i.test(userAgent)) return 'Edge'
-  if (/opr\//i.test(userAgent)) return 'Opera'
-  if (/firefox\//i.test(userAgent)) return 'Firefox'
-  if (/chrome\//i.test(userAgent)) return 'Chrome'
-  if (/safari\//i.test(userAgent)) return 'Safari'
-  return null
-}
-
-// 与桌面端一致的两段式命名：平台 • 详情。
-export function describeDevice(userAgent: string | null): DeviceDescription {
-  if (!userAgent) {
-    return { platform: '未知设备', detail: null, icon: Laptop }
-  }
-
-  const kind = detectPlatformKind(userAgent)
-  const osName = detectOsName(kind)
-  const browser = detectBrowser(userAgent)
-
-  if (/electron/i.test(userAgent)) {
-    return { platform: 'Desktop', detail: osName, icon: Laptop }
-  }
-
-  if (kind === 'ios') {
-    return { platform: 'iPhone', detail: browser ?? 'iOS', icon: Smartphone }
-  }
-
-  if (kind === 'ipados') {
-    return { platform: 'iPad', detail: browser ?? 'iPadOS', icon: Tablet }
-  }
-
-  if (kind === 'android') {
-    return { platform: 'Android', detail: browser ?? 'Android', icon: Smartphone }
-  }
-
-  return { platform: 'Web', detail: browser ?? osName, icon: Laptop }
-}
-
-export function formatDeviceLabel(description: DeviceDescription) {
-  return description.detail
-    ? `${description.platform} • ${description.detail}`
-    : description.platform
-}
-
-export function formatSessionActivity(iso: string) {
-  const date = new Date(iso)
-
-  if (Number.isNaN(date.getTime())) {
-    return ''
-  }
-
-  return `${date.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })} ${date.toLocaleTimeString('zh-CN', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  })}`
 }
 
 // 服务端存的是绝对地址；网页统一改走相对路径，开发环境由 Vite 代理、生产环境同源。

@@ -1,12 +1,31 @@
+# 依赖与构建产物（包含 workspace 子项目）。
 node_modules/
 dist/
 dist-electron/
 release/
-*.local
-.DS_Store
+.pnpm-store/
+.cache/
+.vite/
 
-# TypeScript incremental build metadata
+# 本地环境与凭据；只提交可公开的配置模板。
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.key
+*.pem
+*.p12
+*.pfx
+*.local
+
+# 测试、诊断与增量构建结果。
+coverage/
+playwright-report/
+test-results/
+*.log
+*.heapsnapshot
 *.tsbuildinfo
 
-# 本地工作文档，不入库也不公开
-HANDOFF.md
+# 操作系统临时文件。
+.DS_Store
+Thumbs.db

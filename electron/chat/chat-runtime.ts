@@ -3,7 +3,7 @@ import { createParser } from 'eventsource-parser'
 import type {
   ChatEvent,
   SendMessageRequest,
-} from '../../src/shared/chat-protocol'
+} from '@velin/contracts/chat-protocol'
 import { apiServerUrl, authClient } from '../auth/auth-client'
 
 type ChatEventEmitter = (event: ChatEvent) => void
@@ -35,12 +35,10 @@ function parseChatEvent(value: unknown): ChatEvent | null {
   if (
     typeof event.requestId !== 'string' ||
     typeof event.conversationId !== 'string'
-  ) return null
+  )
+    return null
 
-  if (
-    event.type === 'message-start' ||
-    event.type === 'message-complete'
-  ) {
+  if (event.type === 'message-start' || event.type === 'message-complete') {
     return typeof event.messageId === 'string'
       ? {
           type: event.type,
@@ -102,7 +100,8 @@ export class ChatRuntime {
     if (
       this.tasks.has(request.requestId) ||
       this.conversationRequests.has(request.conversationId)
-    ) return false
+    )
+      return false
 
     const task: ChatTask = {
       request,
@@ -181,7 +180,8 @@ export class ChatRuntime {
             !event ||
             event.requestId !== request.requestId ||
             event.conversationId !== request.conversationId
-          ) return
+          )
+            return
 
           emit(event)
           if (event.type === 'message-complete' || event.type === 'error') {
@@ -216,7 +216,10 @@ export class ChatRuntime {
     } finally {
       clearTimeout(timeout)
       this.tasks.delete(request.requestId)
-      if (this.conversationRequests.get(request.conversationId) === request.requestId) {
+      if (
+        this.conversationRequests.get(request.conversationId) ===
+        request.requestId
+      ) {
         this.conversationRequests.delete(request.conversationId)
       }
       if (task.stopped) {

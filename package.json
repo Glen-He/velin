@@ -10,15 +10,17 @@
     "node": ">=24.20.0 <25"
   },
   "scripts": {
-    "dev": "concurrently --kill-others-on-fail --names auth,web,desktop --prefix-colors cyan,magenta,green \"pnpm --filter @velin/auth-server dev\" \"pnpm --filter @velin/auth-web dev\" \"vite\"",
-    "dev:desktop": "vite",
-    "build": "pnpm --filter @velin/auth-web build && pnpm --filter @velin/auth-server build && tsc -b && vite build",
-    "typecheck": "pnpm --filter @velin/auth-web typecheck && pnpm --filter @velin/auth-server typecheck && tsc -b",
+    "dev": "pnpm --filter @velin/contracts build && concurrently --kill-others-on-fail --names contracts,auth,web,desktop --prefix-colors yellow,cyan,magenta,green \"pnpm --filter @velin/contracts build --watch\" \"pnpm --filter @velin/auth-server dev\" \"pnpm --filter @velin/auth-web dev\" \"vite\"",
+    "dev:desktop": "pnpm --filter @velin/contracts build && vite",
+    "build": "pnpm --filter @velin/contracts build && pnpm --filter @velin/auth-web build && pnpm --filter @velin/auth-server build && tsc -b && vite build",
+    "typecheck": "pnpm --filter @velin/contracts build && pnpm --filter @velin/auth-web typecheck && pnpm --filter @velin/auth-server typecheck && tsc -b",
     "lint": "oxlint .",
-    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "test": "pnpm --filter @velin/contracts build && node --experimental-strip-types --test tests/*.test.ts && pnpm --filter @velin/auth-server test",
     "db:generate": "pnpm --filter @velin/auth-server db:generate",
     "db:migrate": "pnpm --filter @velin/auth-server db:migrate",
-    "db:rollback": "pnpm --filter @velin/auth-server db:rollback"
+    "db:rollback": "pnpm --filter @velin/auth-server db:rollback",
+    "format": "prettier --write src electron apps/*/src packages/*/src tests apps/auth-server/tests docs AGENTS.md README.md",
+    "format:check": "prettier --check src electron apps/*/src packages/*/src tests apps/auth-server/tests docs AGENTS.md README.md"
   },
   "dependencies": {
     "@better-auth/electron": "1.7.6",
@@ -26,6 +28,8 @@
     "@dnd-kit/sortable": "10.0.0",
     "@dnd-kit/utilities": "3.2.2",
     "@streamdown/code": "1.1.1",
+    "@velin/contracts": "workspace:*",
+    "@velin/ui": "workspace:*",
     "better-auth": "1.7.6",
     "conf": "15.1.0",
     "eventsource-parser": "4.1.1",
@@ -33,7 +37,6 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-easy-crop": "^6.2.3",
-    "react-resizable-panels": "4.14.1",
     "streamdown": "2.6.0"
   },
   "devDependencies": {
@@ -44,6 +47,7 @@
     "concurrently": "10.0.5",
     "electron": "44.4.5",
     "oxlint": "1.85.0",
+    "prettier": "3.6.2",
     "typescript": "7.0.2",
     "vite": "8.3.1",
     "vite-plugin-electron": "1.1.2"

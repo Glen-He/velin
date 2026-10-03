@@ -1,3 +1,4 @@
+import { chatRequestSchema } from '@velin/contracts/chat-validation'
 import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from 'electron'
 import type {
   IpcMainEvent,
@@ -11,12 +12,12 @@ import {
   type ChatEvent,
   type SendMessageRequest,
   type StopMessageRequest,
-} from '../src/shared/chat-protocol'
+} from '@velin/contracts/chat-protocol'
 import {
   appMenuIpcChannels,
   type AppMenuAction,
-} from '../src/shared/app-menu-protocol'
-import { windowIpcChannels } from '../src/shared/window-protocol'
+} from '@velin/contracts/app-menu-protocol'
+import { windowIpcChannels } from '@velin/contracts/window-protocol'
 import { ChatRuntime } from './chat/chat-runtime'
 import {
   authClient,
@@ -28,7 +29,7 @@ import {
   updateDisplayName,
   listAuthenticatedSessions,
   revokeOtherSessions,
-  revokeSessionByToken,
+  revokeSessionById,
 } from './auth/auth-client'
 import { fetchAvatarImage, uploadAvatar } from './auth/avatar'
 import {
@@ -36,11 +37,13 @@ import {
   type AuthFlow,
   type AuthIntent,
   type AuthState,
-} from '../src/shared/auth-protocol'
+} from '@velin/contracts/auth-protocol'
 
 const currentDirectory = dirname(fileURLToPath(import.meta.url))
 const developmentUrl = process.env.VITE_DEV_SERVER_URL
-const developmentOrigin = developmentUrl ? new URL(developmentUrl).origin : undefined
+const developmentOrigin = developmentUrl
+  ? new URL(developmentUrl).origin
+  : undefined
 const productionEntryPath = join(currentDirectory, '../dist/index.html')
 const productionEntryUrl = pathToFileURL(productionEntryPath).href
 const chatRuntime = new ChatRuntime(() =>
@@ -87,9 +90,7 @@ async function refreshAuthState() {
 
 function registerAuthIpcHandlers() {
   ipcMain.handle(authIpcChannels.getState, async (event) => ({
-    user: isTrustedRenderer(event)
-      ? await getInitialAuthenticatedUser()
-      : null,
+    user: isTrustedRenderer(event) ? await getInitialAuthenticatedUser() : null,
   }))
 
   ipcMain.handle(authIpcChannels.requestSignIn, async (event, intent, flow) => {
@@ -201,7 +202,7 @@ function registerAuthIpcHandlers() {
       return
     }
 
-    await revokeSessionByToken(payload)
+    await revokeSessionById(payload)
   })
 
   ipcMain.handle(authIpcChannels.revokeOtherSessions, async (event) => {
@@ -313,45 +314,9 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0
 }
 
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-
 function parseSendMessageRequest(payload: unknown): SendMessageRequest | null {
-  if (!isRecord(payload)) {
-    return null
-  }
-
-  const { requestId, conversationId, messages } = payload
-
-  if (
-    typeof requestId !== 'string' ||
-    !uuidPattern.test(requestId) ||
-    typeof conversationId !== 'string' ||
-    !uuidPattern.test(conversationId) ||
-    !Array.isArray(messages) ||
-    messages.length === 0 ||
-    messages.length > 32
-  ) {
-    return null
-  }
-
-  const parsedMessages: SendMessageRequest['messages'] = []
-  let totalLength = 0
-  for (const message of messages) {
-    if (
-      !isRecord(message) ||
-      (message.role !== 'user' && message.role !== 'assistant') ||
-      typeof message.content !== 'string' ||
-      message.content.trim().length === 0 ||
-      message.content.length > 8_000
-    ) return null
-
-    totalLength += message.content.length
-    if (totalLength > 32_000) return null
-    parsedMessages.push({ role: message.role, content: message.content })
-  }
-
-  if (parsedMessages.at(-1)?.role !== 'user') return null
-  return { requestId, conversationId, messages: parsedMessages }
+  const parsed = chatRequestSchema.safeParse(payload)
+  return parsed.success ? parsed.data : null
 }
 
 function parseStopMessageRequest(payload: unknown): StopMessageRequest | null {
@@ -383,7 +348,8 @@ function isTrustedRenderer(event: IpcMainEvent | IpcMainInvokeEvent) {
     const senderUrl = new URL(senderFrame.url)
 
     return (
-      (developmentOrigin !== undefined && senderUrl.origin === developmentOrigin) ||
+      (developmentOrigin !== undefined &&
+        senderUrl.origin === developmentOrigin) ||
       senderUrl.href === productionEntryUrl
     )
   } catch {
@@ -412,26 +378,34 @@ function emitError(
 }
 
 function registerChatIpcHandlers() {
-  ipcMain.handle(chatIpcChannels.openExternalLink, async (event, value: unknown) => {
-    if (!isTrustedRenderer(event) || typeof value !== 'string' || value.length > 2048) {
-      return
-    }
+  ipcMain.handle(
+    chatIpcChannels.openExternalLink,
+    async (event, value: unknown) => {
+      if (
+        !isTrustedRenderer(event) ||
+        typeof value !== 'string' ||
+        value.length > 2048
+      ) {
+        return
+      }
 
-    let externalUrl: URL
-    try {
-      externalUrl = new URL(value)
-    } catch {
-      return
-    }
+      let externalUrl: URL
+      try {
+        externalUrl = new URL(value)
+      } catch {
+        return
+      }
 
-    if (
-      (externalUrl.protocol === 'https:' || externalUrl.protocol === 'http:') &&
-      !externalUrl.username &&
-      !externalUrl.password
-    ) {
-      await shell.openExternal(externalUrl.href, { activate: true })
-    }
-  })
+      if (
+        (externalUrl.protocol === 'https:' ||
+          externalUrl.protocol === 'http:') &&
+        !externalUrl.username &&
+        !externalUrl.password
+      ) {
+        await shell.openExternal(externalUrl.href, { activate: true })
+      }
+    },
+  )
 
   ipcMain.on(chatIpcChannels.send, (event, payload: unknown) => {
     if (!isTrustedRenderer(event)) {
@@ -491,7 +465,9 @@ function emitFullScreenState() {
 
 function registerWindowIpcHandlers() {
   ipcMain.handle(windowIpcChannels.getFullScreenState, (event) => {
-    return isTrustedRenderer(event) ? (mainWindow?.isFullScreen() ?? false) : false
+    return isTrustedRenderer(event)
+      ? (mainWindow?.isFullScreen() ?? false)
+      : false
   })
 }
 
@@ -539,7 +515,8 @@ function createWindow() {
   mainWindow.webContents.on('will-navigate', (event, navigationUrl) => {
     const navigation = new URL(navigationUrl)
     const isAllowed =
-      (developmentOrigin !== undefined && navigation.origin === developmentOrigin) ||
+      (developmentOrigin !== undefined &&
+        navigation.origin === developmentOrigin) ||
       navigation.href === productionEntryUrl
 
     if (!isAllowed) {

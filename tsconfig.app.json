@@ -8,6 +8,7 @@
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "allowArbitraryExtensions": true,
+    "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
 
     /* Bundler mode */

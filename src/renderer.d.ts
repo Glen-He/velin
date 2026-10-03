@@ -1,4 +1,4 @@
-import type { VelinApi } from './shared/velin-api'
+import type { VelinApi } from '@velin/contracts/velin-api'
 
 declare global {
   interface Window {

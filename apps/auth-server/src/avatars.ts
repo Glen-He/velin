@@ -1,9 +1,8 @@
+import { avatarLimits } from '@velin/contracts/policy'
 import type { Hono } from 'hono'
 import { auth } from './auth.js'
 import { config } from './config.js'
 import { databasePool } from './database.js'
-
-const maxUploadBytes = 512 * 1024
 
 const jpegSignature = [0xff, 0xd8, 0xff] as const
 
@@ -24,7 +23,9 @@ export function registerAvatarRoutes(app: Hono) {
       return context.json({ message: '请求来源无效。' }, 403)
     }
 
-    const session = await auth.api.getSession({ headers: context.req.raw.headers })
+    const session = await auth.api.getSession({
+      headers: context.req.raw.headers,
+    })
     if (!session) {
       return context.json({ message: '请先登录后再上传头像。' }, 401)
     }
@@ -39,19 +40,27 @@ export function registerAvatarRoutes(app: Hono) {
     if (
       !Number.isInteger(declaredLength) ||
       declaredLength <= 0 ||
-      declaredLength > maxUploadBytes ||
+      declaredLength > avatarLimits.uploadBytes ||
       contentType !== 'image/jpeg'
     ) {
-      return context.json({ message: '头像必须是 512KB 以内的 JPEG 图片。' }, 400)
+      return context.json(
+        { message: '头像必须是 512KB 以内的 JPEG 图片。' },
+        400,
+      )
     }
 
     const bytes = Buffer.from(await context.req.arrayBuffer())
     const hasJpegSignature =
+      bytes.length === declaredLength &&
+      bytes.length <= avatarLimits.uploadBytes &&
       bytes.length > jpegSignature.length &&
       jpegSignature.every((value, index) => bytes[index] === value)
 
     if (!hasJpegSignature) {
-      return context.json({ message: '头像必须是 512KB 以内的 JPEG 图片。' }, 400)
+      return context.json(
+        { message: '头像必须是 512KB 以内的 JPEG 图片。' },
+        400,
+      )
     }
 
     try {

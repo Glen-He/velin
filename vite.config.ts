@@ -11,7 +11,7 @@ export default defineConfig(({ command }) => ({
   server: {
     strictPort: true,
     watch: {
-      ignored: [electronOutput],
+      ignored: [electronOutput, '**/apps/*/dist/**', '**/.review.local/**'],
     },
   },
   plugins: [

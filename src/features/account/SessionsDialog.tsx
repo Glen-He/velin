@@ -1,106 +1,31 @@
-import { Laptop, LogOut, Smartphone, Tablet } from 'lucide-react'
+import { Laptop, LogOut, Smartphone, Tablet, Terminal } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import type { DesktopSession } from '../../shared/auth-protocol'
-import { CardDialog } from '../settings/CardDialog'
+import type { DesktopSession } from '@velin/contracts/auth-protocol'
+import {
+  formatSessionActivity,
+  formatSessionClient,
+  normalizeSessionClient,
+} from '@velin/contracts/session-client'
+import type { SessionClientIcon } from '@velin/contracts/session-client'
+import { CardDialog } from '../../components/CardDialog'
 
 const maxSessionCount = 64
 
-type DeviceDescription = {
-  platform: string
-  detail: string | null
-  icon: LucideIcon
+const sessionClientIcons: Record<SessionClientIcon, LucideIcon> = {
+  desktop: Laptop,
+  phone: Smartphone,
+  tablet: Tablet,
+  terminal: Terminal,
 }
 
-function detectPlatformKind(userAgent: string) {
-  if (/iphone/i.test(userAgent)) return 'ios'
-  if (/ipad/i.test(userAgent)) return 'ipados'
-  if (/android/i.test(userAgent)) return 'android'
-  if (/windows/i.test(userAgent)) return 'windows'
-  if (/macintosh|mac os x/i.test(userAgent)) return 'mac'
-  if (/linux/i.test(userAgent)) return 'linux'
-  return null
-}
-
-function detectOsName(kind: ReturnType<typeof detectPlatformKind>) {
-  switch (kind) {
-    case 'mac':
-      return 'macOS'
-    case 'windows':
-      return 'Windows'
-    case 'linux':
-      return 'Linux'
-    case 'ios':
-      return 'iOS'
-    case 'ipados':
-      return 'iPadOS'
-    case 'android':
-      return 'Android'
-    default:
-      return null
-  }
-}
-
-function detectBrowser(userAgent: string) {
-  if (/edg\//i.test(userAgent)) return 'Edge'
-  if (/opr\//i.test(userAgent)) return 'Opera'
-  if (/firefox\//i.test(userAgent)) return 'Firefox'
-  if (/chrome\//i.test(userAgent)) return 'Chrome'
-  if (/safari\//i.test(userAgent)) return 'Safari'
-  return null
-}
-
-// 参考 macOS 设备列表的两段式命名：平台 • 详情。
-function describeDevice(userAgent: string | null): DeviceDescription {
-  if (!userAgent) {
-    return { platform: '未知设备', detail: null, icon: Laptop }
-  }
-
-  const kind = detectPlatformKind(userAgent)
-  const osName = detectOsName(kind)
-  const browser = detectBrowser(userAgent)
-
-  if (/electron/i.test(userAgent)) {
-    return { platform: 'Desktop', detail: osName, icon: Laptop }
-  }
-
-  if (kind === 'ios') {
-    return { platform: 'iPhone', detail: browser ?? 'iOS', icon: Smartphone }
-  }
-
-  if (kind === 'ipados') {
-    return { platform: 'iPad', detail: browser ?? 'iPadOS', icon: Tablet }
-  }
-
-  if (kind === 'android') {
-    return { platform: 'Android', detail: browser ?? 'Android', icon: Smartphone }
-  }
-
-  return { platform: 'Web', detail: browser ?? osName, icon: Laptop }
-}
-
-function formatDeviceLabel(description: DeviceDescription) {
-  return description.detail
-    ? `${description.platform} • ${description.detail}`
-    : description.platform
-}
-
-function formatActivity(iso: string) {
-  const date = new Date(iso)
-
-  if (Number.isNaN(date.getTime())) {
-    return ''
-  }
-
-  return `${date.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })} ${date.toLocaleTimeString('zh-CN', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  })}`
+function describeSession(session: DesktopSession) {
+  return formatSessionClient(
+    normalizeSessionClient({
+      userAgent: session.userAgent,
+      clientMetadata: session.clientMetadata,
+    }),
+  )
 }
 
 // 设备会话列表由 Main 通过 better-auth 内置能力读取；当前设备行
@@ -108,7 +33,9 @@ function formatActivity(iso: string) {
 export function SessionsDialog({ onClose }: { onClose: () => void }) {
   const [sessions, setSessions] = useState<DesktopSession[] | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [pendingRevoke, setPendingRevoke] = useState<DesktopSession | null>(null)
+  const [pendingRevoke, setPendingRevoke] = useState<DesktopSession | null>(
+    null,
+  )
   const [isRevokingOthers, setIsRevokingOthers] = useState(false)
 
   useEffect(() => {
@@ -136,16 +63,16 @@ export function SessionsDialog({ onClose }: { onClose: () => void }) {
     }
   }, [])
 
-  async function revokeOne(token: string) {
+  async function revokeOne(sessionId: string) {
     if (isRevokingOthers) {
       return
     }
 
     setError(null)
     try {
-      await window.velin.auth.revokeSession(token)
+      await window.velin.auth.revokeSession(sessionId)
       setSessions((current) =>
-        current ? current.filter((item) => item.token !== token) : current,
+        current ? current.filter((item) => item.id !== sessionId) : current,
       )
     } catch (cause) {
       setError(
@@ -204,18 +131,18 @@ export function SessionsDialog({ onClose }: { onClose: () => void }) {
       ) : (
         <div className="sessions-list">
           {sortedSessions.map((session) => {
-            const description = describeDevice(session.userAgent)
-            const DeviceIcon = description.icon
-            const activity = formatActivity(session.updatedAt)
+            const client = describeSession(session)
+            const DeviceIcon = sessionClientIcons[client.icon]
+            const activity = formatSessionActivity(session.updatedAt)
 
             return (
-              <div className="session-row" key={session.token}>
+              <div className="session-row" key={session.id}>
                 <span className="session-icon" aria-hidden="true">
                   <DeviceIcon />
                 </span>
                 <div className="session-copy">
                   <div className="session-name">
-                    {formatDeviceLabel(description)}
+                    {client.label}
                     {session.isCurrent ? (
                       <span className="session-current-badge">当前设备</span>
                     ) : null}
@@ -248,14 +175,14 @@ export function SessionsDialog({ onClose }: { onClose: () => void }) {
 
       <div className="card-dialog-actions">
         <button
-          className="settings-action-button is-secondary is-wide"
+          className="settings-action-button is-outline is-wide"
           type="button"
           onClick={onClose}
         >
           关闭
         </button>
         <button
-          className="settings-action-button is-danger is-wide"
+          className="settings-action-button is-danger-primary is-wide"
           type="button"
           disabled={isRevokingOthers || !hasOtherSessions}
           onClick={() => void revokeOthers()}
@@ -267,24 +194,24 @@ export function SessionsDialog({ onClose }: { onClose: () => void }) {
       {pendingRevoke ? (
         <CardDialog title="退出设备" onClose={() => setPendingRevoke(null)}>
           <p className="card-dialog-text">
-            确认要退出「{formatDeviceLabel(describeDevice(pendingRevoke.userAgent))}
+            确认要退出「{describeSession(pendingRevoke).label}
             」吗？该设备上的登录会话将被移除。
           </p>
           <div className="card-dialog-actions">
             <button
-              className="settings-action-button is-secondary"
+              className="settings-action-button is-outline"
               type="button"
               onClick={() => setPendingRevoke(null)}
             >
               取消
             </button>
             <button
-              className="settings-action-button is-danger"
+              className="settings-action-button is-danger-primary"
               type="button"
               onClick={() => {
                 const target = pendingRevoke
                 setPendingRevoke(null)
-                void revokeOne(target.token)
+                void revokeOne(target.id)
               }}
             >
               退出设备

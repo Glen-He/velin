@@ -1,14 +1,17 @@
+import { toDesktopSessions } from './session-dto'
 import { electronClient } from '@better-auth/electron/client'
 import type { ElectronClientOptions } from '@better-auth/electron/client'
 import { storage } from '@better-auth/electron/storage'
 import { createAuthClient } from 'better-auth/client'
+import { app } from 'electron'
 import type { BetterAuthClientPlugin, User } from 'better-auth'
 import type {
   AuthFlow,
   AuthIntent,
   AuthUser,
   DesktopSession,
-} from '../../src/shared/auth-protocol'
+} from '@velin/contracts/auth-protocol'
+import type { SessionClientMetadata } from '@velin/contracts/session-client'
 
 export const apiServerUrl = (
   process.env.VELIN_AUTH_SERVER_URL ?? 'http://localhost:3000'
@@ -72,14 +75,18 @@ const configuredManualRegistrationClient = electronClient({
 // public client type currently narrows it to `"half"`. The runtime contracts
 // are compatible; preserve the plugin's concrete action types across that
 // upstream declaration mismatch.
-const compatibleElectronClient = configuredElectronClient as unknown as
-  BetterAuthClientPlugin & typeof configuredElectronClient
-const compatibleRegistrationClient = configuredRegistrationClient as unknown as
-  BetterAuthClientPlugin & typeof configuredRegistrationClient
-const compatibleManualCodeClient = configuredManualCodeClient as unknown as
-  BetterAuthClientPlugin & typeof configuredManualCodeClient
-const compatibleManualRegistrationClient = configuredManualRegistrationClient as unknown as
-  BetterAuthClientPlugin & typeof configuredManualRegistrationClient
+const compatibleElectronClient =
+  configuredElectronClient as unknown as BetterAuthClientPlugin &
+    typeof configuredElectronClient
+const compatibleRegistrationClient =
+  configuredRegistrationClient as unknown as BetterAuthClientPlugin &
+    typeof configuredRegistrationClient
+const compatibleManualCodeClient =
+  configuredManualCodeClient as unknown as BetterAuthClientPlugin &
+    typeof configuredManualCodeClient
+const compatibleManualRegistrationClient =
+  configuredManualRegistrationClient as unknown as BetterAuthClientPlugin &
+    typeof configuredManualRegistrationClient
 
 export const authClient = createAuthClient({
   baseURL: apiServerUrl,
@@ -104,13 +111,15 @@ export async function requestDesktopAuthentication(
   flow: AuthFlow,
 ) {
   if (flow === 'manual-code') {
-    await (intent === 'sign-up'
-      ? manualRegistrationAuthClient
-      : manualCodeAuthClient).requestAuth()
+    await (
+      intent === 'sign-up' ? manualRegistrationAuthClient : manualCodeAuthClient
+    ).requestAuth()
     return
   }
 
-  await (intent === 'sign-up' ? registrationAuthClient : authClient).requestAuth()
+  await (
+    intent === 'sign-up' ? registrationAuthClient : authClient
+  ).requestAuth()
 }
 
 export async function getAuthenticatedUser(): Promise<AuthUser | null> {
@@ -211,7 +220,11 @@ function readCurrentSessionToken(data: unknown): string | null {
 
   const session = (data as { session: unknown }).session
 
-  if (typeof session !== 'object' || session === null || !('token' in session)) {
+  if (
+    typeof session !== 'object' ||
+    session === null ||
+    !('token' in session)
+  ) {
     return null
   }
 
@@ -220,21 +233,17 @@ function readCurrentSessionToken(data: unknown): string | null {
   return typeof token === 'string' ? token : null
 }
 
-// better-auth 客户端会把日期字段反序列化成 Date 对象，统一转回 ISO 字符串。
-function normalizeSessionDate(value: unknown): string {
-  if (value instanceof Date) {
-    return value.toISOString()
+// 本机自己就是产品，不必再从 UA 猜身份；这份 metadata 只用于展示。
+function currentClientMetadata(): SessionClientMetadata {
+  if (process.platform === 'darwin') {
+    return { name: app.getName(), version: app.getVersion(), osName: 'macOS' }
   }
 
-  if (typeof value === 'string') {
-    return value
+  if (process.platform === 'win32') {
+    return { name: app.getName(), version: app.getVersion(), osName: 'Windows' }
   }
 
-  if (typeof value === 'number') {
-    return new Date(value).toISOString()
-  }
-
-  return ''
+  return { name: app.getName(), version: app.getVersion(), osName: 'Linux' }
 }
 
 export async function listAuthenticatedSessions(): Promise<DesktopSession[]> {
@@ -245,47 +254,43 @@ export async function listAuthenticatedSessions(): Promise<DesktopSession[]> {
 
   if (listResult.error) {
     throw new Error(
-      readProfileErrorMessage(listResult.error, '读取登录设备失败，请稍后重试。'),
+      readProfileErrorMessage(
+        listResult.error,
+        '读取登录设备失败，请稍后重试。',
+      ),
     )
   }
 
-  const currentToken = readCurrentSessionToken(currentResult.data)
-  const rawSessions: unknown[] = Array.isArray(listResult.data)
-    ? listResult.data
-    : []
-
-  const sessions: DesktopSession[] = []
-
-  for (const item of rawSessions) {
-    if (typeof item !== 'object' || item === null) {
-      continue
-    }
-
-    const record = item as Record<string, unknown>
-    const token = record.token
-
-    if (typeof token !== 'string' || token.length === 0) {
-      continue
-    }
-
-    sessions.push({
-      token,
-      isCurrent: token === currentToken,
-      ipAddress: typeof record.ipAddress === 'string' ? record.ipAddress : null,
-      userAgent: typeof record.userAgent === 'string' ? record.userAgent : null,
-      createdAt: normalizeSessionDate(record.createdAt),
-      updatedAt: normalizeSessionDate(record.updatedAt),
-      expiresAt: normalizeSessionDate(record.expiresAt),
-    })
-  }
-
-  return sessions
+  if (currentResult.error) throw new Error('无法确定当前登录设备，请稍后重试。')
+  return toDesktopSessions(
+    listResult.data,
+    readCurrentSessionToken(currentResult.data),
+    currentClientMetadata(),
+  )
 }
 
-export async function revokeSessionByToken(token: string) {
+export async function revokeSessionById(sessionId: string) {
+  const sessions = await authClient.$fetch('/list-sessions', { method: 'GET' })
+  if (sessions.error || !Array.isArray(sessions.data))
+    throw new Error('读取登录设备失败。')
+  const target = sessions.data.find(
+    (item: unknown) =>
+      typeof item === 'object' &&
+      item !== null &&
+      'id' in item &&
+      item.id === sessionId,
+  )
+  if (
+    !target ||
+    typeof target !== 'object' ||
+    !('token' in target) ||
+    typeof target.token !== 'string'
+  ) {
+    throw new Error('该设备不存在或已退出。')
+  }
   const result = await authClient.$fetch('/revoke-session', {
     method: 'POST',
-    body: { token },
+    body: { token: target.token },
   })
 
   if (result.error) {
@@ -296,7 +301,7 @@ export async function revokeSessionByToken(token: string) {
 }
 
 export async function revokeOtherSessions() {
-  const result = await authClient.$fetch('/revoke-sessions', {
+  const result = await authClient.$fetch('/revoke-other-sessions', {
     method: 'POST',
     body: {},
   })

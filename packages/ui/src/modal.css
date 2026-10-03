@@ -1,0 +1,28 @@
+.velin-modal-root {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  overflow: auto;
+}
+.velin-modal-root:focus {
+  outline: none;
+}
+.velin-modal-root::backdrop {
+  background: transparent;
+}
+
+/* Content remains scrollable on short windows and when text is enlarged. */
+.velin-modal-root > .web-modal-scrim,
+.velin-modal-root > .card-dialog-scrim {
+  position: relative;
+  inset: auto;
+  min-height: 100%;
+}

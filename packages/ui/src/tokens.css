@@ -1,0 +1,112 @@
+@import './themes.css';
+
+:root {
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Segoe UI',
+    sans-serif;
+  --font-mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  --line-height-tight: 1.2;
+  --line-height-body: 1.5;
+  --line-height-reading: 1.7;
+
+  /* Space scale: control (2–8), related content (10–16), group (20–32), page (40–64). */
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 6px;
+  --space-4: 8px;
+  --space-5: 10px;
+  --space-6: 12px;
+  --space-7: 14px;
+  --space-8: 16px;
+  --space-9: 20px;
+  --space-10: 24px;
+  --space-11: 28px;
+  --space-12: 32px;
+  --space-13: 36px;
+  --space-14: 40px;
+  --space-15: 48px;
+  --space-16: 56px;
+  --space-17: 64px;
+  --space-control-gap: var(--space-4);
+  --space-row: var(--space-8);
+  --space-section: var(--space-10);
+  --space-page: var(--space-14);
+  --radius-circle: 50%;
+  --radius-control: 8px;
+  --radius-message-tail: 6px;
+  --radius-preview: 13px;
+  --radius-preview-window: 11px;
+
+  /* Text roles: keep font size in rem so the desktop font-scale setting works. */
+  --type-micro: 0.6875rem;
+  --type-caption: 0.75rem;
+  --type-control: 0.8125rem;
+  --type-body: 0.875rem;
+  --type-input: 0.9375rem;
+  --type-subtitle: 1rem;
+  --type-section: 1.25rem;
+  --type-page: 1.5rem;
+  --type-auth-title: 2rem;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* Rectangles follow their role; circles and pills use complete curvature. */
+  --radius-compact: 10px;
+  --radius-field: 12px;
+  --radius-menu-item: 13px;
+  --radius-sidebar-item: 15px;
+  --radius-menu: 16px;
+  --radius-message: 18px;
+  --radius-card: 22px;
+  --radius-pill: 999px;
+
+  /* Glyph sizes are independent from the clickable control dimensions. */
+  --icon-xs: 14px;
+  --icon-sm: 16px;
+  --icon-md: 18px;
+  --icon-lg: 20px;
+  --icon-xl: 24px;
+  --icon-sidebar-action: var(--icon-sm);
+  --icon-chat-action: var(--icon-xs);
+  --icon-slot-field: 22px;
+  --control-icon-compact: 28px;
+  --control-icon-default: 36px;
+  --control-provider: 42px;
+  --control-field-height: 44px;
+  --control-submit-height: 42px;
+  --control-button-compact: 32px;
+  --control-button-width-compact: 64px;
+  --control-button-width-regular: 88px;
+  --control-button-width-extended: 112px;
+  --control-button-gap: var(--space-control-gap);
+  --dialog-width-base: 400px;
+  --dialog-width-large: 600px;
+  --dialog-width-extra: 800px;
+
+  /* Short, purpose-based motion shared by desktop and browser authentication. */
+  --motion-duration-feedback: 140ms;
+  --motion-duration-panel: 145ms;
+  --motion-duration-content: 180ms;
+  --motion-duration-step: 220ms;
+  --motion-duration-copied: 1600ms;
+  --motion-ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  --web-radius-card: var(--radius-menu);
+  --row-gutter: var(--space-9);
+  --row-padding: var(--space-row);
+  --row-content-height: 38px;
+  --row-height: calc(var(--row-content-height) + var(--row-padding) * 2);
+  --account-avatar-size: 44px;
+  --web-radius-field: var(--radius-compact);
+  --web-radius-control: var(--radius-control);
+
+  /* 对话框宽度取自 Apple Account 生产样式表：.modal-alert 是 450 → 335 → 290。
+     450 = 2×180 按钮 + 10 间距 + 2×40 内缩。 */
+  --web-dialog-alert-width: 450px;
+  --web-dialog-pad-inline: var(--space-page);
+  --web-dialog-pad-block: 25px;
+  --web-dialog-button-width: 180px;
+  --web-dialog-button-gap: var(--space-5);
+}

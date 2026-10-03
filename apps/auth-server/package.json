@@ -13,7 +13,8 @@
     "start": "node --env-file-if-exists=.env.local dist/server.js",
     "db:generate": "auth generate --config src/auth.ts --output migrations/generated.sql -y",
     "db:migrate": "node --env-file-if-exists=.env.local --import tsx src/database/migrate.ts up",
-    "db:rollback": "node --env-file-if-exists=.env.local --import tsx src/database/migrate.ts down"
+    "db:rollback": "node --env-file-if-exists=.env.local --import tsx src/database/migrate.ts down",
+    "test": "node --import tsx --test tests/*.test.ts"
   },
   "dependencies": {
     "@better-auth/electron": "1.7.6",
@@ -25,7 +26,8 @@
     "nodemailer": "10.0.11",
     "openai": "7.23.0",
     "pg": "8.23.0",
-    "zod": "4.6.5"
+    "zod": "4.6.5",
+    "@velin/contracts": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "24.19.0",

@@ -1,0 +1,254 @@
+.sidebar-surface-stack,
+.content-surface-stack {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.workspace-surface {
+  position: absolute;
+  inset: 0;
+  min-width: 0;
+  opacity: 1;
+  transform: translateX(0);
+  transition:
+    opacity var(--motion-duration-content) var(--motion-ease-standard),
+    transform var(--motion-duration-content) var(--motion-ease-standard);
+}
+
+.settings-sidebar-surface,
+.settings-content-surface {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(6px);
+}
+
+.app-shell.is-settings-view .conversation-sidebar-surface,
+.app-shell.is-settings-view .chat-content-surface {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-6px);
+}
+
+.app-shell.is-settings-view .settings-sidebar-surface,
+.app-shell.is-settings-view .settings-content-surface {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
+.sidebar-panel {
+  z-index: 20;
+  height: 100%;
+  min-width: 0;
+  overflow: clip;
+}
+
+.main-content {
+  z-index: 0;
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.app-shell.is-sidebar-collapsed .sidebar {
+  pointer-events: none;
+  transform: translateX(-10px);
+}
+
+.window-titlebar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 50;
+  height: var(--titlebar-height);
+  pointer-events: auto;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.window-titlebar-drag-surface {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: calc(var(--sidebar-toggle-inline-position) + 36px);
+  pointer-events: auto;
+  -webkit-app-region: drag;
+}
+
+.sidebar-toggle {
+  position: absolute;
+  top: 8px;
+  left: var(--sidebar-toggle-inline-position);
+  z-index: 1;
+  display: grid;
+  width: var(--control-icon-compact);
+  height: var(--control-icon-compact);
+  place-items: center;
+  border-radius: var(--corner-icon-button);
+  background: transparent;
+  color: var(--muted-text);
+  cursor: pointer;
+  pointer-events: auto;
+  transition:
+    background var(--motion-duration-feedback) ease,
+    color var(--motion-duration-feedback) ease;
+  -webkit-app-region: no-drag;
+}
+
+.app-shell.is-full-screen .sidebar-toggle {
+  left: 12px;
+}
+
+.app-shell.is-full-screen .window-titlebar-drag-surface {
+  left: 48px;
+}
+
+.sidebar-toggle:hover {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--text);
+}
+
+.sidebar-toggle svg {
+  width: var(--icon-sidebar-action);
+  height: var(--icon-sidebar-action);
+  fill: none;
+  pointer-events: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.titlebar-drag-region {
+  -webkit-app-region: drag;
+}
+
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+.sidebar-toggle,
+.sidebar-toggle * {
+  -webkit-app-region: no-drag;
+}
+
+.sidebar {
+  position: relative;
+  display: flex;
+  height: 100%;
+  width: 100%;
+  min-width: var(--sidebar-width);
+  flex-shrink: 0;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--sidebar-background);
+  transform: translateX(0);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* 7px 命中区在 1px 网格轨道两侧各溢出 3px，分隔线正好落在两个轨道的边界上。 */
+.sidebar-resize-handle {
+  position: relative;
+  z-index: 40;
+  width: 7px;
+  margin-inline: -3px;
+  cursor: col-resize;
+  background: transparent;
+  opacity: 1;
+  transition: opacity var(--motion-duration-feedback) ease;
+  -webkit-app-region: no-drag;
+}
+
+.sidebar-resize-handle::after {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: var(--hairline-width);
+  background: var(--border);
+  content: '';
+  transform: translateX(-50%);
+  transition:
+    background var(--motion-duration-feedback) ease,
+    width var(--motion-duration-feedback) ease;
+}
+
+.sidebar-resize-handle:hover::after,
+.sidebar-resize-handle:focus-visible::after,
+.app-shell.is-sidebar-resizing .sidebar-resize-handle::after {
+  width: 1px;
+  background: color-mix(in srgb, var(--menu-selection) 62%, var(--border));
+}
+
+.sidebar-resize-handle:focus-visible {
+  outline: none;
+}
+
+.app-shell.is-sidebar-collapsed .sidebar-resize-handle {
+  opacity: 0;
+}
+
+/* 二段收起手势进行中，分隔线只隐去外观，仍要接收已捕获的指针事件。 */
+.app-shell.is-sidebar-collapsed:not(.is-sidebar-resizing)
+  .sidebar-resize-handle {
+  pointer-events: none;
+}
+
+.sidebar-edge-reveal {
+  position: fixed;
+  top: var(--titlebar-height);
+  bottom: 0;
+  left: 0;
+  z-index: 49;
+  width: 5px;
+  -webkit-app-region: no-drag;
+}
+
+.sidebar-header {
+  padding: var(--titlebar-height) var(--sidebar-inline-gutter) var(--space-6);
+}
+
+.new-conversation-button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  height: var(--sidebar-control-height);
+  padding: 0 var(--sidebar-item-inline-padding);
+  border-radius: var(--corner-sidebar-control);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-size: var(--type-body);
+  font-weight: var(--weight-semibold);
+  text-align: left;
+  transition: background var(--motion-duration-feedback) ease;
+  line-height: 1;
+}
+
+.new-conversation-button > span {
+  display: block;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.new-conversation-button:hover {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.new-conversation-icon {
+  display: block;
+  width: var(--icon-sidebar-action);
+  height: var(--icon-sidebar-action);
+  flex: 0 0 var(--icon-sidebar-action);
+  fill: none;
+  stroke: currentColor;
+  transform: translateY(-0.5px);
+}

@@ -2,31 +2,31 @@ import { contextBridge, ipcRenderer } from 'electron'
 import {
   appMenuIpcChannels,
   type AppMenuAction,
-} from '../src/shared/app-menu-protocol'
+} from '@velin/contracts/app-menu-protocol'
 import {
   chatIpcChannels,
   type ChatEvent,
   type SendMessageRequest,
   type StopMessageRequest,
-} from '../src/shared/chat-protocol'
+} from '@velin/contracts/chat-protocol'
 import type {
   AppMenuActionListener,
   ChatEventListener,
   FullScreenStateListener,
   VelinApi,
-} from '../src/shared/velin-api'
-import { windowIpcChannels } from '../src/shared/window-protocol'
+} from '@velin/contracts/velin-api'
+import { windowIpcChannels } from '@velin/contracts/window-protocol'
 import {
   authIpcChannels,
   type AuthError,
   type AuthFlow,
   type AuthIntent,
   type AuthState,
-} from '../src/shared/auth-protocol'
+} from '@velin/contracts/auth-protocol'
 import type {
   AuthErrorListener,
   AuthStateListener,
-} from '../src/shared/velin-api'
+} from '@velin/contracts/velin-api'
 
 const velinApi: VelinApi = {
   auth: {
@@ -57,8 +57,8 @@ const velinApi: VelinApi = {
     listSessions() {
       return ipcRenderer.invoke(authIpcChannels.listSessions)
     },
-    revokeSession(token: string) {
-      return ipcRenderer.invoke(authIpcChannels.revokeSession, token)
+    revokeSession(sessionId: string) {
+      return ipcRenderer.invoke(authIpcChannels.revokeSession, sessionId)
     },
     revokeOtherSessions() {
       return ipcRenderer.invoke(authIpcChannels.revokeOtherSessions)
@@ -108,7 +108,10 @@ const velinApi: VelinApi = {
       return ipcRenderer.invoke(chatIpcChannels.openExternalLink, url)
     },
     subscribe(listener: ChatEventListener) {
-      const handleEvent = (_event: Electron.IpcRendererEvent, event: ChatEvent) => {
+      const handleEvent = (
+        _event: Electron.IpcRendererEvent,
+        event: ChatEvent,
+      ) => {
         listener(event)
       }
 
@@ -150,7 +153,10 @@ const velinApi: VelinApi = {
       ipcRenderer.on(windowIpcChannels.fullScreenChanged, handleState)
 
       return () => {
-        ipcRenderer.removeListener(windowIpcChannels.fullScreenChanged, handleState)
+        ipcRenderer.removeListener(
+          windowIpcChannels.fullScreenChanged,
+          handleState,
+        )
       }
     },
   },

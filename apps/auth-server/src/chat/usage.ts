@@ -1,7 +1,12 @@
 import { config } from '../config.js'
 import { databasePool } from '../database.js'
 
-export type ChatLimitReason = 'duplicate' | 'busy' | 'minute' | 'daily' | 'global'
+export type ChatLimitReason =
+  | 'duplicate'
+  | 'busy'
+  | 'minute'
+  | 'daily'
+  | 'global'
 export type ChatRequestStatus = 'completed' | 'failed' | 'cancelled'
 
 export async function reserveChatRequest(

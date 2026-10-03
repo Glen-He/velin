@@ -20,8 +20,8 @@ import type { LucideIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { CSSProperties, MouseEvent } from 'react'
-import type { Conversation } from '../../shared/chat'
-import type { AuthUser } from '../../shared/auth-protocol'
+import type { Conversation } from '@velin/contracts/chat'
+import type { AuthUser } from '@velin/contracts/auth-protocol'
 import { UserAvatar } from '../account/UserAvatar'
 
 type ConversationSidebarProps = {
@@ -77,7 +77,9 @@ function MenuIcon({ icon: Icon, size = 15, offsetY = 0 }: MenuIconProps) {
       <Icon
         className="context-menu-icon"
         size={size}
-        style={offsetY === 0 ? undefined : { transform: `translateY(${offsetY}px)` }}
+        style={
+          offsetY === 0 ? undefined : { transform: `translateY(${offsetY}px)` }
+        }
       />
     </span>
   )
@@ -156,8 +158,11 @@ function ConversationSidebar({
   onSelectConversation,
   isActive,
 }: ConversationSidebarProps) {
-  const [contextMenu, setContextMenu] = useState<ConversationContextMenu | null>(null)
-  const [accountMenu, setAccountMenu] = useState<AccountMenuPosition | null>(null)
+  const [contextMenu, setContextMenu] =
+    useState<ConversationContextMenu | null>(null)
+  const [accountMenu, setAccountMenu] = useState<AccountMenuPosition | null>(
+    null,
+  )
   const [activeDragId, setActiveDragId] = useState<string | null>(null)
   const accountButtonRef = useRef<HTMLButtonElement>(null)
 

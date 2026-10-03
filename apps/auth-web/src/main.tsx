@@ -3,6 +3,12 @@ import { createRoot } from 'react-dom/client'
 import App from './App'
 import './index.css'
 
+document.documentElement.dataset.theme = /^\/(account|security)(\/|$)/.test(
+  window.location.pathname,
+)
+  ? 'system'
+  : 'light'
+
 const rootElement = document.getElementById('root')
 
 if (!rootElement) {

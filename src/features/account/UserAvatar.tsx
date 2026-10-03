@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { UserRound } from 'lucide-react'
 import type { ReactNode } from 'react'
-import type { AuthUser } from '../../shared/auth-protocol'
+import type { AuthUser } from '@velin/contracts/auth-protocol'
 
 // 头像字节由 Main 代取后转为 blob: URL；同一地址在会话内只取一次，
 // 供侧边栏、设置页与对话框共享。加载失败时回退显示首字母。

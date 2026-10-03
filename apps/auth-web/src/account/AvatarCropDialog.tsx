@@ -1,13 +1,12 @@
+import { avatarLimits } from '@velin/contracts/policy'
+import { acceptedAvatarTypes, cropAvatar } from '@velin/ui/avatar.ts'
+import { Modal } from '@velin/ui/Modal.tsx'
 import Cropper from 'react-easy-crop'
 import 'react-easy-crop/react-easy-crop.css'
 import { Camera } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import type { Area } from 'react-easy-crop'
-
-const maxSourceBytes = 8 * 1024 * 1024
-const avatarOutputSize = 256
-const acceptedImageTypes = ['image/png', 'image/jpeg', 'image/webp']
 
 // 网页端头像更换：选图 → 圆形裁剪 → 256px JPEG 上传到认证服务。
 // 服务端存的地址为绝对路径，展示时统一转相对路径走同源。
@@ -32,20 +31,6 @@ export function AvatarCropDialog({
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    const handleKeyDown = (event: globalThis.KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose()
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown)
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [onClose])
-
-  useEffect(() => {
     return () => {
       if (imageUrl) {
         URL.revokeObjectURL(imageUrl)
@@ -65,12 +50,12 @@ export function AvatarCropDialog({
       return
     }
 
-    if (!acceptedImageTypes.includes(file.type)) {
+    if (!acceptedAvatarTypes.some((type) => type === file.type)) {
       setError('请选择 PNG、JPEG 或 WebP 格式的图片。')
       return
     }
 
-    if (file.size > maxSourceBytes) {
+    if (file.size > avatarLimits.sourceBytes) {
       setError('图片太大，请选择 8MB 以内的图片。')
       return
     }
@@ -89,41 +74,7 @@ export function AvatarCropDialog({
       throw new Error('请先调整裁剪区域。')
     }
 
-    const bitmap = await createImageBitmap(imageFile)
-    const canvas = document.createElement('canvas')
-    canvas.width = avatarOutputSize
-    canvas.height = avatarOutputSize
-    const context = canvas.getContext('2d')
-
-    if (!context) {
-      bitmap.close()
-      throw new Error('头像处理失败，请重试。')
-    }
-
-    context.imageSmoothingEnabled = true
-    context.imageSmoothingQuality = 'high'
-    context.drawImage(
-      bitmap,
-      area.x,
-      area.y,
-      area.width,
-      area.height,
-      0,
-      0,
-      avatarOutputSize,
-      avatarOutputSize,
-    )
-    bitmap.close()
-
-    const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, 'image/jpeg', 0.9),
-    )
-
-    if (!blob) {
-      throw new Error('头像处理失败，请重试。')
-    }
-
-    return new Uint8Array(await blob.arrayBuffer())
+    return cropAvatar(imageFile, area, avatarLimits.outputSize)
   }
 
   async function confirmUpload() {
@@ -168,110 +119,136 @@ export function AvatarCropDialog({
     }
   }
 
+  // 写成两条比较而不是 Boolean(...)：TypeScript 只有这样才能在分支里收窄出非空的 imageUrl。
+  const isCropStage = imageUrl !== null && imageFile !== null
+
   return (
-    <div className="web-modal-scrim" onPointerDown={onClose}>
-      <div
-        className="web-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label="更换头像"
-        onPointerDown={(event) => event.stopPropagation()}
-      >
-        <h2 className="web-modal-title">更换头像</h2>
+    <Modal
+      label={isCropStage ? '调整头像' : '更换头像'}
+      onClose={onClose}
+      focusKey={isCropStage ? 'crop' : 'pick'}
+    >
+      <div className="web-modal-scrim" onPointerDown={onClose}>
+        <div
+          className={`web-modal avatar-dialog${isCropStage ? ' is-crop' : ''}`}
+          aria-label={isCropStage ? '调整头像' : '更换头像'}
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          <h2 className="web-modal-title">
+            {isCropStage ? '调整头像' : '更换头像'}
+          </h2>
 
-        {imageUrl && imageFile ? (
-          <div className="avatar-crop-body">
-            <div className="avatar-crop-area">
-              <Cropper
-                image={imageUrl}
-                crop={crop}
-                zoom={zoom}
-                aspect={1}
-                cropShape="round"
-                showGrid={false}
-                onCropChange={setCrop}
-                onZoomChange={setZoom}
-                onCropComplete={(_, croppedAreaPixels) => {
-                  croppedAreaRef.current = croppedAreaPixels
-                }}
-              />
+          {/* 两阶段共用同一副骨架：标题 → 正文 → 提示行 → 操作行；
+            正文不锁高度，选图到裁剪之间隔着系统文件面板，不是看得见的一次换步。 */}
+          {isCropStage ? (
+            <div className="avatar-crop-body">
+              <div className="avatar-crop-area">
+                <Cropper
+                  image={imageUrl}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  cropShape="round"
+                  showGrid={false}
+                  onCropChange={setCrop}
+                  onZoomChange={setZoom}
+                  onCropComplete={(_, croppedAreaPixels) => {
+                    croppedAreaRef.current = croppedAreaPixels
+                  }}
+                />
+              </div>
+              <p className="avatar-step-hint">
+                拖动图片调整位置，使用滑杆缩放。
+              </p>
+              <div className="avatar-zoom-row">
+                <span className="avatar-zoom-label">缩放</span>
+                <input
+                  className="avatar-zoom-slider"
+                  type="range"
+                  min={1}
+                  max={3}
+                  step={0.01}
+                  value={zoom}
+                  aria-label="缩放头像"
+                  onChange={(event) => setZoom(Number(event.target.value))}
+                />
+              </div>
+              <button
+                className="text-button avatar-repick-button"
+                type="button"
+                onClick={pickFile}
+              >
+                重新选择图片
+              </button>
             </div>
-            <input
-              className="avatar-zoom-slider"
-              type="range"
-              min={1}
-              max={3}
-              step={0.01}
-              value={zoom}
-              aria-label="缩放头像"
-              onChange={(event) => setZoom(Number(event.target.value))}
-            />
-            <button
-              className="avatar-repick-button"
-              type="button"
-              onClick={pickFile}
-            >
-              重新选择图片
-            </button>
-          </div>
-        ) : (
-          <div className="avatar-pick-body">
-            <button
-              className="account-avatar-button is-large"
-              type="button"
-              aria-label="选择图片"
-              title="选择图片"
-              onClick={pickFile}
-            >
-              <span className="account-avatar-lg" aria-hidden="true">
-                {currentImage ? (
-                  <img src={currentImage} alt="" />
-                ) : (
-                  initial
-                )}
-                <span className="account-avatar-hint">
-                  <Camera aria-hidden="true" />
+          ) : (
+            <div className="avatar-pick-body">
+              {/* 头像本身是快捷入口，底部「选择图片」是显式入口，两者走同一个 pickFile。
+                  这里不写 title：原生提示会在切到裁剪阶段后继续悬浮在弹窗左上角。 */}
+              <button
+                className="account-avatar-button is-large"
+                type="button"
+                aria-label="选择头像图片"
+                onClick={pickFile}
+              >
+                <span className="account-avatar-lg" aria-hidden="true">
+                  {currentImage ? <img src={currentImage} alt="" /> : initial}
+                  <span className="account-avatar-hint">
+                    <Camera aria-hidden="true" />
+                  </span>
                 </span>
-              </span>
-            </button>
-            <p className="avatar-pick-hint">
-              点击头像选择一张图片，裁剪为圆形。
-              <br />
-              支持 PNG、JPEG 或 WebP，8MB 以内。
-            </p>
-          </div>
-        )}
+              </button>
+              <p className="avatar-step-hint">
+                选择一张图片作为你的头像，之后可以调整显示区域。
+                <br />
+                支持 PNG、JPEG 或 WebP，8MB 以内。
+              </p>
+            </div>
+          )}
 
-        <p className="auth-field-hint" role={error ? 'alert' : undefined}>
-          {error ?? ''}
-        </p>
+          <p className="auth-field-hint" role={error ? 'alert' : undefined}>
+            {error ?? ''}
+          </p>
 
-        <div className="web-modal-actions">
-          <button className="security-action is-secondary is-narrow" type="button" onClick={onClose}>
-            取消
-          </button>
-          {imageUrl ? (
+          <div className="web-modal-actions">
             <button
-              className="security-action is-primary is-narrow"
+              className="security-action is-outline"
               type="button"
-              disabled={isUploading}
-              onClick={() => void confirmUpload()}
+              onClick={onClose}
             >
-              {isUploading ? '上传中…' : '确认'}
+              取消
             </button>
-          ) : null}
-        </div>
+            {isCropStage ? (
+              <button
+                className="security-action is-primary"
+                type="button"
+                disabled={isUploading}
+                onClick={() => void confirmUpload()}
+              >
+                {isUploading ? '上传中…' : '保存'}
+              </button>
+            ) : (
+              <button
+                className="security-action is-primary"
+                type="button"
+                onClick={pickFile}
+              >
+                选择图片
+              </button>
+            )}
+          </div>
 
-        <input
-          ref={fileInputRef}
-          className="avatar-file-input"
-          type="file"
-          accept="image/png,image/jpeg,image/webp"
-          tabIndex={-1}
-          aria-hidden="true"
-          onChange={handleFileChange}
-        />
+          <input
+            ref={fileInputRef}
+            className="avatar-file-input"
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            tabIndex={-1}
+            aria-hidden="true"
+            onChange={handleFileChange}
+          />
+        </div>
       </div>
-    </div>
+    </Modal>
   )
 }

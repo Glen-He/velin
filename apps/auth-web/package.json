@@ -16,10 +16,13 @@
     "@better-auth/passkey": "1.7.6",
     "better-auth": "1.7.6",
     "lucide-react": "1.48.0",
+    "qr-code-styling": "1.9.2",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-easy-crop": "^6.2.3",
-    "react-qr-code": "2.2.0"
+    "@velin/contracts": "workspace:*",
+    "@velin/ui": "workspace:*",
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "@types/react": "19.3.0",

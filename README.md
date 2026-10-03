@@ -31,7 +31,7 @@ pnpm dev
 
 macOS 和 Linux 从命令行启动的开发版不能可靠接收应用协议回跳。开发版点击登录或注册会在浏览器完成验证后显示一次性授权码，桌面端同步进入输入步骤；复制并粘贴该码即可完成登录。已安装且正确注册 `com.velin.desktop` 协议的发布版使用自动回跳。
 
-Google 与邮箱验证码只登录已有账号；注册使用邮箱和密码。内部唯一用户 ID 由认证服务生成并存入 PostgreSQL，注册页不收集姓名，默认显示邮箱。新密码要求 8–32 位 ASCII 可见字符，可使用英文字母、数字和常见符号，不强制字符类别组合；服务端还会拒绝已知泄露密码。已有账号的旧密码仍可登录，更改或重置时应用新规则。注册后需通过邮件验证码验证邮箱。
+Google 与邮箱验证码只登录已有账号；注册使用邮箱和密码。内部唯一用户 ID 由认证服务生成并存入 PostgreSQL，注册页不收集姓名，默认显示邮箱。新密码要求 15–128 个字符，允许空格与 Unicode，拒绝控制字符，不强制字符类别组合；服务端还会拒绝已知泄露密码。已有账号的旧密码仍可登录，更改或重置时应用新规则。注册后需通过邮件验证码验证邮箱。
 
 ## DeepSeek 对话
 
@@ -42,9 +42,27 @@ Google 与邮箱验证码只登录已有账号；注册使用邮箱和密码。�
 ## 验证
 
 ```bash
+pnpm format:check
 pnpm lint
 pnpm typecheck
+pnpm test
 pnpm build
 ```
 
 渲染层是不可信且无特权的 Web 环境。Electron 主进程与 preload 代码位于 `electron/`；原始 Electron API、认证 Cookie 和令牌一律不暴露给渲染层。
+
+## 维护文档
+
+- [模块与职责](docs/architecture.md)
+- [设计系统](docs/design-system.md)
+- [敏感操作授权](docs/security.md)
+- [本次重构验证](docs/refactor-validation.md)
+
+共享协议与视觉基础分别位于 `packages/contracts` 和 `packages/ui`。开发命令会先编译 contracts，再监听变更。新代码首次运行前执行 `pnpm db:migrate`，应用迁移 005 的一次性操作授权表。
+
+认证集成测试需要隔离的 PostgreSQL 数据库，名称必须为 `velin_*test`。先迁移该数据库，再运行全部测试；未配置测试 URL 时，数据库集成部分会明确跳过。
+
+```sh
+DATABASE_URL=postgresql://USER@localhost:5432/velin_security_test pnpm db:migrate
+VELIN_TEST_DATABASE_URL=postgresql://USER@localhost:5432/velin_security_test pnpm test
+```

@@ -1,0 +1,113 @@
+:root {
+  font-family: var(--font-sans);
+  color: var(--color-ink);
+  background: var(--color-canvas);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  --background: var(--color-canvas);
+  --sidebar-background: var(--color-sidebar);
+  --surface: var(--color-surface);
+  --surface-muted: var(--color-sunken);
+  --border: var(--color-border-subtle);
+  --text: var(--color-ink);
+  --muted-text: var(--color-secondary);
+  --subtle-text: var(--color-icon-muted);
+  --accent: var(--color-primary);
+  --accent-contrast: var(--color-on-primary);
+  --user-bubble: var(--color-sunken);
+  --assistant-bubble: transparent;
+  --danger: var(--color-danger);
+  --danger-background: var(--color-danger-soft);
+  --menu-selection: var(--color-blue);
+  --menu-selection-text: var(--color-on-accent);
+  --menu-icon-size: var(--icon-sm);
+  --focus-ring: var(--color-focus);
+  --shadow: var(--shadow-menu);
+  --titlebar-height: 55px;
+  --sidebar-toggle-inline-position: 80px;
+  --sidebar-resize-track: 1px;
+  --hairline-width: 0.5px;
+  --sidebar-control-height: 38px;
+  --sidebar-inline-gutter: 10px;
+  --sidebar-item-inline-padding: var(--space-5);
+  --corner-compact: var(--radius-compact);
+  --corner-icon-button: var(--radius-menu-item);
+  --corner-raised: var(--radius-field);
+  --corner-sidebar-control: var(--radius-sidebar-item);
+  --corner-menu: var(--radius-menu);
+  --corner-menu-item: var(--radius-menu-item);
+  --corner-message: var(--radius-message);
+  --corner-message-tail: var(--radius-message-tail);
+  --corner-settings-card: var(--radius-card);
+  --corner-appearance-preview: var(--radius-preview);
+  --corner-appearance-window: var(--radius-preview-window);
+  --composer-control-size: var(--control-icon-default);
+  --composer-line-box-height: 20px;
+  --composer-line-height: 1.35;
+  --composer-shell-min-height: 48px;
+  --composer-shell-padding: var(--space-3);
+  --composer-shell-radius: 24px;
+  --composer-font-size: var(--type-input);
+  --chat-content-max-width: 900px;
+  /* 相对主区域而不是窗口：侧边栏宽度、窗口尺寸都不参与这里的计算。 */
+  --chat-content-inline-padding: clamp(var(--space-7), 6%, 80px);
+}
+
+:root[data-font-scale='small'] {
+  font-size: var(--type-input);
+}
+
+:root[data-font-scale='default'] {
+  font-size: var(--type-subtitle);
+}
+
+:root[data-font-scale='large'] {
+  font-size: 17px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 900px;
+  min-height: 600px;
+  margin: 0;
+  overflow: hidden;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  border: 0;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* 客户端一律不显示视觉滚动条（见 AGENTS.md「滚动与滚动条」）。
+   只隐藏表现：滚动仍完全交给原生 overflow，滚轮、触控板、键盘、程序化滚动、
+   focus 滚动到可见和辅助技术行为都不受影响，也不得为此写任何 JS 滚动逻辑。 */
+* {
+  scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+button:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+#root {
+  min-height: 100vh;
+}

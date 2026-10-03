@@ -1,10 +1,14 @@
 import { ArrowDown, ArrowUp, Check, Copy, Pencil, X } from 'lucide-react'
-import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
 import type { FormEvent, KeyboardEvent } from 'react'
-import { code } from '@streamdown/code'
-import { Streamdown } from 'streamdown'
-import type { Components, ControlsConfig, IconMap, StreamdownTranslations } from 'streamdown'
-import type { Conversation, Message } from '../../shared/chat'
+import type { Conversation, Message } from '@velin/contracts/chat'
 import Composer from './Composer'
 
 type ChatViewProps = {
@@ -12,7 +16,7 @@ type ChatViewProps = {
   errorMessage?: string
   isStreaming: boolean
   sendOnEnter: boolean
-  onSendMessage: (content: string) => void
+  onSendMessage: (content: string) => boolean
   onEditMessage: (
     conversationId: string,
     messageId: string,
@@ -32,87 +36,7 @@ type MessageBubbleProps = {
 
 const scrollAwayThreshold = 80
 const emptyMessages: Message[] = []
-const streamdownPlugins = { code }
-const streamdownControls = {
-  code: { copy: true, download: false },
-  table: false,
-  image: false,
-} satisfies ControlsConfig
-const streamdownTranslations = {
-  copyCode: '复制代码',
-  copied: '已复制',
-} satisfies Partial<StreamdownTranslations>
-const streamdownIcons = {
-  CopyIcon: Copy,
-  CheckIcon: Check,
-} satisfies Partial<IconMap>
-
-function externalHttpUrl(value: string | undefined) {
-  if (!value) return null
-
-  try {
-    const url = new URL(value)
-    return (url.protocol === 'https:' || url.protocol === 'http:') &&
-      !url.username &&
-      !url.password
-      ? url.href
-      : null
-  } catch {
-    return null
-  }
-}
-
-const markdownComponents = {
-  a({ href, children }) {
-    const url = externalHttpUrl(href)
-    if (!url) return <span>{children}</span>
-
-    return (
-      <a
-        href={url}
-        onClick={(event) => {
-          event.preventDefault()
-          void window.velin.chat.openExternalLink(url)
-        }}
-      >
-        {children}
-      </a>
-    )
-  },
-  img({ alt, src }) {
-    const url = externalHttpUrl(src)
-    return url ? <span className="markdown-image-reference">图片：{alt || url}</span> : null
-  },
-} satisfies Components
-
-const AssistantMarkdown = memo(function AssistantMarkdown({
-  content,
-  isStreaming,
-}: {
-  content: string
-  isStreaming: boolean
-}) {
-  if (!content) return null
-
-  return (
-    <Streamdown
-      animated={false}
-      className="assistant-markdown"
-      components={markdownComponents}
-      codeBlockMaxHeight={0}
-      controls={streamdownControls}
-      icons={streamdownIcons}
-      isAnimating={isStreaming}
-      lineNumbers={false}
-      mode={isStreaming ? 'streaming' : 'static'}
-      parseIncompleteMarkdown={isStreaming}
-      plugins={streamdownPlugins}
-      translations={streamdownTranslations}
-    >
-      {content}
-    </Streamdown>
-  )
-})
+const AssistantMarkdown = lazy(() => import('./AssistantMarkdown'))
 
 type ScrollPosition = {
   conversationId?: string
@@ -221,7 +145,9 @@ function MessageBubble({
   }
 
   return (
-    <div className={`message-row ${isUserMessage ? 'is-user' : 'is-assistant'}`}>
+    <div
+      className={`message-row ${isUserMessage ? 'is-user' : 'is-assistant'}`}
+    >
       <div className={`message-stack${isEditing ? ' is-editing' : ''}`}>
         {isEditing ? (
           <form className="message-editor" onSubmit={handleEditSubmit}>
@@ -271,11 +197,15 @@ function MessageBubble({
             }`}
           >
             <div className="message-content">
-              {isUserMessage ? message.content : (
-                <AssistantMarkdown
-                  content={message.content}
-                  isStreaming={isStreamingAssistant}
-                />
+              {isUserMessage ? (
+                message.content
+              ) : (
+                <Suspense fallback={<span>{message.content}</span>}>
+                  <AssistantMarkdown
+                    content={message.content}
+                    isStreaming={isStreamingAssistant}
+                  />
+                </Suspense>
               )}
             </div>
           </div>
@@ -354,7 +284,9 @@ function ChatView({
 
   function measureScrollPosition(messageList: HTMLDivElement) {
     const distanceFromBottom =
-      messageList.scrollHeight - messageList.clientHeight - messageList.scrollTop
+      messageList.scrollHeight -
+      messageList.clientHeight -
+      messageList.scrollTop
     const nextIsAwayFromBottom = distanceFromBottom > scrollAwayThreshold
 
     shouldFollowMessagesRef.current = !nextIsAwayFromBottom
@@ -401,7 +333,7 @@ function ChatView({
   function handleSendMessage(content: string) {
     shouldFollowMessagesRef.current = true
     updateScrollPosition(false)
-    onSendMessage(content)
+    return onSendMessage(content)
   }
 
   function handleEditMessage(

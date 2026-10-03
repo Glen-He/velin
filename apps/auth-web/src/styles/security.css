@@ -1,0 +1,439 @@
+.security-page {
+  width: min(100% - 40px, 960px);
+  margin: 0 auto;
+  padding: var(--space-14) 0;
+}
+
+/* 展开面板只能从自己的位置生长或收缩：关闭根滚动容器的滚动锚定，
+   浏览器才不会用 scrollTop 补偿布局变化，把面板上方的内容整体往下拉。 */
+html:has(.security-page) {
+  overflow-anchor: none;
+}
+
+/* 返回是轻量层级导航，不是动作：默认没有实体背景，用辅助灰 + 常规字重，
+   比分组标签（14px + medium）再低一档，让 32px 的页面大标题保持顶部唯一重点。 */
+/* 父级导航：弱于一级标题，但必须读作可点击的导航而不是辅助说明，
+   所以用正文档字号（导航文字）配墨色与辅助灰之间的 `--color-ink-hover`。
+   行高写死 1.25，让命中盒始终落在 32px 槽位内，不推动一级标题。 */
+.security-header a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  gap: 0;
+  color: var(--color-ink-hover);
+  font-size: var(--type-body);
+  font-weight: var(--weight-regular);
+  line-height: 1.25;
+  text-decoration: none;
+  transition: color var(--motion-duration-feedback) ease;
+}
+
+/* Lucide chevron.left 的墨迹只占 24 画布里的 9→15，两侧各留 9/24 的空转：
+   16px 渲染时每侧 6px。再加 gap 会把箭头推散，所以用负外边距抵掉一部分
+   内留白，箭头墨迹到文字约 3px（约 0.21em）。 */
+.security-header a svg {
+  flex: none;
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  margin-right: -3px;
+}
+
+/* 悬停只让文字加深（次级墨色 → 一级墨色），图标随文字一起响应。 */
+.security-header a:hover {
+  color: var(--color-ink);
+}
+
+/* 命中高度固定 32px，槽位到一级标题只留 10px（对齐分组标签到内容的档位），
+   把返回与标题读作“父级 → 当前”的一处标题区，而不是两块分离的内容。
+   四页共用同一槽位，有无返回入口都让 h1 落在同一纵坐标。 */
+.security-header-slot {
+  min-height: 32px;
+  margin-bottom: var(--space-5);
+  display: flex;
+  align-items: center;
+}
+
+/* 命中区由 `min-height: 32px` 保证，但不画背景：
+   上下 7px 内缩用等量负外边距吸收，槽位高度和一级标题纵坐标都不受影响。
+   左侧负外边距比内缩多出箭头自身的 6px 墨迹空转（-12 对 6），
+   让箭头墨迹左沿与一级标题文字左沿落在同一条内容轴上，不外突。 */
+.security-back-button {
+  padding: 7px var(--space-3);
+  margin: -7px 0 -7px -12px;
+}
+
+.security-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.security-header-row h1 {
+  margin-bottom: 0;
+}
+
+.security-header {
+  margin-bottom: var(--space-11);
+}
+
+.security-header h1 {
+  margin-bottom: 0;
+  font-size: var(--type-auth-title);
+  letter-spacing: -0.03em;
+}
+
+/* 独立单层方框（身份卡）：只提供外壳，几何由使用方决定。 */
+.security-card {
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--web-radius-card);
+  background: var(--color-canvas);
+}
+
+.security-action {
+  display: grid;
+  width: var(--control-button-width-regular);
+  height: var(--control-button-compact);
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  color: var(--color-ink);
+  background: var(--color-control);
+  cursor: pointer;
+  font-size: var(--type-caption);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  transition:
+    background-color var(--motion-duration-feedback) ease,
+    color var(--motion-duration-feedback) ease,
+    opacity var(--motion-duration-feedback) ease;
+}
+
+.security-action.is-narrow {
+  width: var(--control-button-width-compact);
+}
+
+.security-action.is-wide {
+  width: var(--control-button-width-extended);
+}
+
+.security-action:hover:not(:disabled) {
+  background: var(--color-control-hover);
+}
+
+.security-action:focus-visible {
+  outline: 2px solid var(--color-blue);
+  outline-offset: 2px;
+}
+
+.security-action.danger-button {
+  color: var(--color-danger-text);
+  background: var(--color-danger-soft);
+}
+
+.security-action.danger-button:hover:not(:disabled) {
+  background: color-mix(
+    in srgb,
+    var(--color-danger) 15%,
+    var(--color-danger-soft)
+  );
+}
+
+.security-state {
+  color: var(--color-icon-muted);
+  font-size: var(--type-caption);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+}
+
+.security-state.is-enabled {
+  color: var(--color-success-text);
+}
+
+/* 卡片正文：内容靠上、操作行贴底，高度按该操作最高的一步固定，
+   较矮的步骤只把差值留在中间，不让控件挤在顶部。
+   轨道必须写成 minmax(0, 1fr)：默认的 auto 轨道会按 max-content 撑开，
+   输入框的固有宽度（约 184）会把整条链顶到比卡片正文还宽，手机档直接溢出。 */
+.dialog-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: var(--dialog-body-height);
+}
+
+/* 正文 = 字段区 + 提示行 + 操作行。提示行与操作行永远钉在正文底部
+   （操作行底边到卡片边缘的距离 = 卡片内边距），字段区吃掉剩下的全部高度，
+   所以任何一步的按钮都和其他卡片底部对齐。 */
+.dialog-stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--row-padding);
+  min-width: 0;
+}
+
+.dialog-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  flex: 1;
+  align-content: center;
+  min-width: 0;
+}
+
+/* 每一步的内容组都在同一个字段区里上下居中：区域高度 = 正文 − 提示行 − 操作行，
+   而提示行和操作行每一步都占位，所以任何一步的可用高度完全相同。
+   于是同一种步骤（一列胶囊、一行输入框）不会因为条目多少而一会儿贴顶、一会儿居中；
+   内容高度相等的步骤自然落在同一条线上。
+   内容高于该区域时（修改密码的三行表单、二维码步）由这一步自己撑高卡片，
+   卡片高度取该操作最高的一步，其余步骤只把富余均分到上下两侧。 */
+.dialog-fields-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--row-padding);
+  min-width: 0;
+}
+
+/* 底部行定高为一个 --foot-height：有的步骤这一行只有文字入口，
+   有的是一枚 32px 按钮，手机档还是两枚竖排按钮（74px）。
+   不定高就会让只有文字入口的那一步多出一截字段区，
+   内容组的中心线跟着上下漂移，同一种步骤在不同断点上看起来一会儿贴顶一会儿居中。
+   操作行最多两个按钮且等宽：紧凑档 180 + 10 + 180 正好铺满 370 正文，
+   只有一个按钮时它占满整行（照抄 NSAlert）。 */
+.dialog-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--web-dialog-button-gap);
+  min-height: var(--foot-height, var(--control-button-compact));
+}
+
+/* 只有文字入口时它贴住这一行的底边，和其他步骤按钮的底边线一致。 */
+.dialog-foot .dialog-switch {
+  align-self: flex-end;
+}
+
+.dialog-foot .security-action {
+  flex: 1 1 var(--web-dialog-button-width);
+  min-width: var(--web-dialog-button-width);
+}
+
+/* 卡片里的字段名写在输入框内的 placeholder 上，输入框因此占满正文一行；
+   页面里的行内编辑（修改用户名）仍然使用 260px 定宽，不受这条影响。 */
+.dialog-fields .web-field {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+}
+
+/* 44px 只用在对话框里；页面面板内的行内编辑继续走 32px 那一套。
+   框内文字保持左对齐——输入的是待读内容，跟着中轴走反而看不清起点。 */
+.web-modal .web-field {
+  height: var(--control-field-height);
+}
+
+.web-field::placeholder {
+  color: var(--color-secondary);
+  opacity: 1;
+}
+
+/* 发送动作放进验证码框内的右侧槽，操作行因此永远只放「取消 + 推进」。
+   发送区用一条与输入区等高的分隔线切开，让人看清那是按钮不是文字。
+   宽度必须固定：文案在 发送 / 已发送 / 重发 之间变化，
+   按内容定宽会让分隔线左右跳动，输入区也跟着抖。 */
+.code-field {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+.code-field .web-field {
+  width: 100%;
+}
+
+/* 框内右侧槽各占多宽，由槽本身决定：发送槽文字最长到「已发送」，
+   眼睛槽是 36px 点击框加两侧 4px 内缩。 */
+.code-field.has-send .web-field {
+  padding-right: 88px;
+}
+
+.code-field.has-toggle .web-field {
+  padding-right: var(--space-15);
+}
+
+.code-field .field-send {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  bottom: 1px;
+  width: 84px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--color-border-control);
+  border-radius: 0 var(--web-radius-field) var(--web-radius-field) 0;
+  background: transparent;
+  color: var(--color-blue-text);
+  cursor: pointer;
+  font-size: var(--type-body);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  transition:
+    color var(--motion-duration-feedback) ease,
+    opacity var(--motion-duration-feedback) ease;
+}
+
+/* 悬停只加深文字，与全站蓝色文字入口一致：分隔线已经说明这是按钮，
+   再铺一块蓝色背景就多余了。 */
+.code-field .field-send:hover:not(:disabled) {
+  color: color-mix(in srgb, var(--color-blue-text) 82%, var(--color-black));
+}
+
+.code-field .field-send:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.code-field .field-send:focus-visible {
+  outline: 2px solid var(--color-blue);
+  outline-offset: -2px;
+}
+
+/* 二维码卡片：12px 内边距作静区，外面用一条可见的 hairline 边框收边，
+   元素边界与可见边界一致。svg 必须 display: block，
+   否则它按文字基线排布，会在下方多出几像素。 */
+.qr-code {
+  width: fit-content;
+  margin-inline: auto;
+  padding: var(--space-6);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--web-radius-field);
+  background: white;
+}
+
+.qr-code svg {
+  display: block;
+}
+
+/* 卡片总高不随步骤变化：正文高度 = max(最高的纯输入步骤, 验证方式列表步, 全局最小高度)。
+   每一步都固定占三个槽——字段区 + 提示行 + 操作行，间隔都是 --row-padding（16）。
+   提示行即使为空也占一行，这样列表步和输入步的字段区高度完全相同，内容组
+   在同一个盒子里居中才有可比性——之前列表步没有提示行，它的字段区比输入步高出
+   33px，于是同一种列表一步看起来贴顶、另一步看起来居中。
+   输入框 44px、按钮 32px，下面每个数值都是浏览器实测取整，不是公式估算：
+   验证步（收件说明 17 + 16 + 输入框 44 + 16 + 文字入口 19）= 112 → 正文 112 + 81 = 193；
+   新邮箱两步 104 → 185；修改密码三行 + 规则 + 入口 232 → 313；
+   开启双重认证以二维码步最高（说明 17 + 16 + 二维码卡片 170 + 16 + 输入行 44 + 16 + 提示 17 + 16 + 操作行 32 = 344），恢复码步 205。
+   列表步按可选条数由 --methods-height 兜住（胶囊 44 高，与输入框同档），两者取大。
+   全局最小高度 248 只是兜底，四条通道时由 is-alt-4 顶到 281，列表仍不滚动。
+   预算必须把操作行算进去：之前按 336 写死时二维码步实际要 368，卡片会从 470 被顶到 478，
+   表现为同一步骤之间高度不一致——那是漏算，不是设计。 */
+.security-dialog {
+  --fields-height: 112px;
+  --foot-height: var(--control-button-compact);
+  --notice-height: calc(var(--type-caption) * 1.4);
+  --body-min-height: 248px;
+  --stage-chrome: calc(
+    var(--row-padding) + var(--notice-height) + var(--row-padding) +
+      var(--foot-height)
+  );
+  --op-height: calc(var(--fields-height) + var(--stage-chrome));
+  --method-rows: 0px;
+  --methods-height: calc(var(--method-rows) + var(--stage-chrome));
+  --dialog-body-height: max(
+    var(--op-height),
+    var(--methods-height),
+    var(--body-min-height)
+  );
+  /* 列表条目多于字段区时列表自身滚动，不把卡片撑高。 */
+  --fields-area-height: calc(var(--dialog-body-height) - var(--stage-chrome));
+}
+
+/* 列表正文 = n × 44 胶囊 + (n-1) × 8 间隔；
+   提示行与操作行那一段由 --stage-chrome 跟着断点走，不在这里重抄。 */
+.security-dialog.is-alt-1 {
+  --method-rows: calc(
+    1 * var(--control-field-height) + 0 * var(--space-control-gap)
+  );
+}
+
+.security-dialog.is-alt-2 {
+  --method-rows: calc(
+    2 * var(--control-field-height) + 1 * var(--space-control-gap)
+  );
+}
+
+.security-dialog.is-alt-3 {
+  --method-rows: calc(
+    3 * var(--control-field-height) + 2 * var(--space-control-gap)
+  );
+}
+
+.security-dialog.is-alt-4 {
+  --method-rows: calc(
+    4 * var(--control-field-height) + 3 * var(--space-control-gap)
+  );
+}
+
+.security-dialog.is-changePassword {
+  --fields-height: 232px;
+}
+
+.security-dialog.is-enableTwoFactor {
+  --op-height: 344px;
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.web-field {
+  flex: none;
+  width: 260px;
+  height: var(--control-button-compact);
+  padding: 0 13px;
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--web-radius-field);
+  outline: 0;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-size: var(--type-body);
+  transition: border-color var(--motion-duration-feedback) ease;
+}
+
+.web-field:focus {
+  border-color: var(--color-blue);
+  box-shadow: none;
+}
+
+.panel-title {
+  color: var(--color-ink);
+  font-size: var(--type-body);
+  font-weight: var(--weight-medium);
+  line-height: 1.25;
+}
+
+.panel-hint {
+  margin: 0;
+  color: var(--color-secondary);
+  font-size: var(--type-caption);
+  line-height: 1.4;
+}
+
+.group-feedback {
+  margin: var(--space-5) 0 0;
+  font-size: var(--type-caption);
+  line-height: 1.4;
+}
+
+/* 恢复码排两列，避免 10 行把卡片撑到超过二维码那一步的高度。 */
+.backup-code-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3) var(--space-11);
+  padding: var(--space-6) var(--space-7);
+  border-radius: var(--web-radius-field);
+  background: var(--color-sunken);
+  font-size: var(--type-control);
+  text-align: center;
+}

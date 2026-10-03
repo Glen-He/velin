@@ -1,0 +1,10 @@
+{
+  "name": "@velin/contracts",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": { "./*": { "types": "./src/*.ts", "default": "./dist/*.js" } },
+  "scripts": { "build": "tsc -p tsconfig.json" },
+  "dependencies": { "bowser": "2.14.1", "zod": "4.6.5" },
+  "devDependencies": { "typescript": "7.0.2" }
+}

@@ -1,0 +1,84 @@
+/* Electron AppShell：像素侧边栏 + 弹性主区域。
+   --sidebar-width 由 React 按用户偏好写入，收起只切换轨道，不改写偏好；
+   窗口 resize / 全屏只让第三列重算，JavaScript 不参与几何。 */
+.app-shell {
+  --sidebar-track: var(--sidebar-width);
+  position: relative;
+  display: grid;
+  grid-template-columns:
+    var(--sidebar-track) var(--sidebar-resize-track)
+    minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  height: 100vh;
+  min-height: 100vh;
+  isolation: isolate;
+  background: var(--background);
+  color: var(--text);
+}
+
+/* Keep the chat draft mounted while the full-window auth canvas is open. */
+.app-shell[hidden] {
+  display: none;
+}
+
+.app-shell.is-sidebar-collapsed {
+  --sidebar-track: 0px;
+}
+
+/* 只有用户明确的显示/隐藏动作才动画，直接拖动和窗口 resize 都不加过渡。 */
+.app-shell.is-sidebar-animating {
+  transition: grid-template-columns var(--motion-duration-panel)
+    var(--motion-ease-standard);
+}
+
+.app-shell.is-sidebar-animating .sidebar {
+  transition: transform var(--motion-duration-panel) var(--motion-ease-standard);
+}
+
+.app-shell.is-sidebar-resizing {
+  transition: none;
+  cursor: col-resize;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Chromium keeps border-radius as the fallback; supported builds render these
+   custom surfaces with the continuous curvature used by current macOS UI. */
+@supports (corner-shape: squircle) {
+  .sidebar-toggle,
+  .new-conversation-button,
+  .account-button,
+  .conversation-item-row,
+  .conversation-drag-preview,
+  .conversation-item,
+  .conversation-context-menu,
+  .context-menu-item,
+  .user-message,
+  .message-action-button,
+  .message-editor,
+  .message-editor-button,
+  .assistant-message pre,
+  .assistant-message :not(pre) > code,
+  .assistant-message [data-streamdown='code-block'],
+  .assistant-message [data-streamdown='code-block-copy-button'],
+  .chat-error {
+    corner-shape: squircle;
+  }
+
+  .desktop-auth-code-form > div,
+  .desktop-auth-code-form button,
+  .settings-navigation-item,
+  .settings-back-button,
+  .settings-search-field,
+  .settings-icon-button,
+  .card-dialog,
+  .card-dialog-input,
+  .settings-card,
+  .settings-appearance-preview,
+  .settings-preview-window,
+  .avatar-crop-area,
+  .avatar-repick-button,
+  .session-revoke-button {
+    corner-shape: squircle;
+  }
+}

@@ -1,7 +1,7 @@
-import { ArrowLeft, ArrowRight, KeyRound, LoaderCircle } from 'lucide-react'
+import { ArrowRight, ChevronLeft, KeyRound, LoaderCircle } from 'lucide-react'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import type { AuthFlow } from '../../shared/auth-protocol'
+import type { AuthFlow } from '@velin/contracts/auth-protocol'
 
 type AuthViewProps = {
   errorMessage: string | null
@@ -105,9 +105,7 @@ function AuthView({
               mode === 'authorization-code' ? ' is-code' : ''
             }`}
             type="button"
-            aria-label={
-              mode === 'choice' ? '登录' : '在浏览器中获取授权码'
-            }
+            aria-label={mode === 'choice' ? '登录' : '在浏览器中获取授权码'}
             disabled={isBusy}
             onClick={() => {
               if (mode === 'choice') {
@@ -124,10 +122,16 @@ function AuthView({
               />
             ) : (
               <>
-                <span className="desktop-auth-main-label is-choice" aria-hidden="true">
+                <span
+                  className="desktop-auth-main-label is-choice"
+                  aria-hidden="true"
+                >
                   登录
                 </span>
-                <span className="desktop-auth-main-label is-code" aria-hidden="true">
+                <span
+                  className="desktop-auth-main-label is-code"
+                  aria-hidden="true"
+                >
                   在浏览器中获取授权码
                 </span>
               </>
@@ -229,7 +233,7 @@ function AuthView({
             }
           }}
         >
-          <ArrowLeft aria-hidden="true" />
+          <ChevronLeft aria-hidden="true" />
           <span>返回</span>
         </button>
       </section>

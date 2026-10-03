@@ -1,3 +1,4 @@
+import { chatLimits } from '@velin/contracts/policy'
 import { ArrowUp, Plus, Square } from 'lucide-react'
 import { useRef, useState } from 'react'
 import type { FormEvent, KeyboardEvent } from 'react'
@@ -5,7 +6,7 @@ import type { FormEvent, KeyboardEvent } from 'react'
 type ComposerProps = {
   isStreaming: boolean
   sendOnEnter: boolean
-  onSend: (content: string) => void
+  onSend: (content: string) => boolean
   onStop: () => void
 }
 
@@ -19,7 +20,8 @@ function Composer({ isStreaming, sendOnEnter, onSend, onStop }: ComposerProps) {
     const maxHeight = 160
     textarea.style.height = 'auto'
     textarea.style.height = `${Math.min(textarea.scrollHeight, maxHeight)}px`
-    textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden'
+    textarea.style.overflowY =
+      textarea.scrollHeight > maxHeight ? 'auto' : 'hidden'
   }
 
   function submit() {
@@ -27,7 +29,7 @@ function Composer({ isStreaming, sendOnEnter, onSend, onStop }: ComposerProps) {
       return
     }
 
-    onSend(value)
+    if (!onSend(value)) return
     setValue('')
 
     if (textareaRef.current) {
@@ -71,7 +73,7 @@ function Composer({ isStreaming, sendOnEnter, onSend, onStop }: ComposerProps) {
         </button>
         <textarea
           ref={textareaRef}
-          maxLength={8_000}
+          maxLength={chatLimits.messageCharacters}
           aria-label="输入消息"
           placeholder="输入消息..."
           rows={1}

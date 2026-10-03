@@ -1,16 +1,14 @@
+import { avatarLimits } from '@velin/contracts/policy'
+import { acceptedAvatarTypes, cropAvatar } from '@velin/ui/avatar.ts'
 import Cropper from 'react-easy-crop'
 import 'react-easy-crop/react-easy-crop.css'
 import { Camera } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import type { Area } from 'react-easy-crop'
-import type { AuthUser } from '../../shared/auth-protocol'
-import { CardDialog } from '../settings/CardDialog'
+import type { AuthUser } from '@velin/contracts/auth-protocol'
+import { CardDialog } from '../../components/CardDialog'
 import { UserAvatar } from './UserAvatar'
-
-const maxSourceBytes = 8 * 1024 * 1024
-const avatarOutputSize = 256
-const acceptedImageTypes = ['image/png', 'image/jpeg', 'image/webp']
 
 // 头像更换分两步：先选文件预览，再进入圆形裁剪视图；
 // 输出为服务端约定的 256px JPEG，上传走 Main 进程持有的会话。
@@ -52,12 +50,12 @@ export function AvatarDialog({
       return
     }
 
-    if (!acceptedImageTypes.includes(file.type)) {
+    if (!acceptedAvatarTypes.some((type) => type === file.type)) {
       setError('请选择 PNG、JPEG 或 WebP 格式的图片。')
       return
     }
 
-    if (file.size > maxSourceBytes) {
+    if (file.size > avatarLimits.sourceBytes) {
       setError('图片太大，请选择 8MB 以内的图片。')
       return
     }
@@ -76,41 +74,7 @@ export function AvatarDialog({
       throw new Error('请先调整裁剪区域。')
     }
 
-    const bitmap = await createImageBitmap(imageFile)
-    const canvas = document.createElement('canvas')
-    canvas.width = avatarOutputSize
-    canvas.height = avatarOutputSize
-    const context = canvas.getContext('2d')
-
-    if (!context) {
-      bitmap.close()
-      throw new Error('头像处理失败，请重试。')
-    }
-
-    context.imageSmoothingEnabled = true
-    context.imageSmoothingQuality = 'high'
-    context.drawImage(
-      bitmap,
-      area.x,
-      area.y,
-      area.width,
-      area.height,
-      0,
-      0,
-      avatarOutputSize,
-      avatarOutputSize,
-    )
-    bitmap.close()
-
-    const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, 'image/jpeg', 0.9),
-    )
-
-    if (!blob) {
-      throw new Error('头像处理失败，请重试。')
-    }
-
-    return new Uint8Array(await blob.arrayBuffer())
+    return cropAvatar(imageFile, area, avatarLimits.outputSize)
   }
 
   async function confirmUpload() {
@@ -166,7 +130,11 @@ export function AvatarDialog({
               onChange={(event) => setZoom(Number(event.target.value))}
             />
           </label>
-          <button className="avatar-repick-button" type="button" onClick={pickFile}>
+          <button
+            className="avatar-repick-button"
+            type="button"
+            onClick={pickFile}
+          >
             重新选择图片
           </button>
         </div>
@@ -199,7 +167,7 @@ export function AvatarDialog({
 
       <div className="card-dialog-actions">
         <button
-          className="settings-action-button is-secondary is-narrow"
+          className="settings-action-button is-outline is-narrow"
           type="button"
           onClick={onClose}
         >

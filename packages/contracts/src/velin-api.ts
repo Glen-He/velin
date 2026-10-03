@@ -2,15 +2,15 @@ import type {
   ChatEvent,
   SendMessageRequest,
   StopMessageRequest,
-} from './chat-protocol'
-import type { AppMenuAction } from './app-menu-protocol'
+} from './chat-protocol.js'
+import type { AppMenuAction } from './app-menu-protocol.js'
 import type {
   AuthError,
   AuthFlow,
   AuthIntent,
   AuthState,
   DesktopSession,
-} from './auth-protocol'
+} from './auth-protocol.js'
 
 export type ChatEventListener = (event: ChatEvent) => void
 export type FullScreenStateListener = (isFullScreen: boolean) => void
@@ -29,7 +29,7 @@ export type VelinApi = {
     uploadAvatar: (image: Uint8Array) => Promise<void>
     fetchAvatarImage: (imageUrl: string) => Promise<Uint8Array<ArrayBuffer>>
     listSessions: () => Promise<DesktopSession[]>
-    revokeSession: (token: string) => Promise<void>
+    revokeSession: (sessionId: string) => Promise<void>
     revokeOtherSessions: () => Promise<void>
     subscribe: (listener: AuthStateListener) => () => void
     subscribeErrors: (listener: AuthErrorListener) => () => void

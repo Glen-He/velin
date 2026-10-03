@@ -1,8 +1,9 @@
 import { z } from 'zod'
+import { isIP } from 'node:net'
 
 const optionalEnvironmentString = (minimumLength = 1) =>
   z.preprocess(
-    (value) => value === '' ? undefined : value,
+    (value) => (value === '' ? undefined : value),
     z.string().min(minimumLength).optional(),
   )
 
@@ -13,6 +14,25 @@ const environmentSchema = z
       .default('development'),
     PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
     HOST: z.string().min(1).default('127.0.0.1'),
+    TRUSTED_PROXY_ADDRESSES: z
+      .string()
+      .default('')
+      .transform((value) =>
+        value
+          .split(',')
+          .map((item) => item.trim())
+          .filter(Boolean),
+      )
+      .pipe(
+        z.array(
+          z
+            .string()
+            .refine(
+              (value) => isIP(value) !== 0,
+              '代理地址必须为具体 IP 地址。',
+            ),
+        ),
+      ),
     DATABASE_URL: z
       .string()
       .min(1)
@@ -45,8 +65,7 @@ const environmentSchema = z
     if (hasGoogleClientId !== hasGoogleClientSecret) {
       context.addIssue({
         code: 'custom',
-        message:
-          'GOOGLE_CLIENT_ID 和 GOOGLE_CLIENT_SECRET 必须同时配置。',
+        message: 'GOOGLE_CLIENT_ID 和 GOOGLE_CLIENT_SECRET 必须同时配置。',
         path: ['GOOGLE_CLIENT_ID'],
       })
     }
@@ -98,7 +117,10 @@ const environmentSchema = z
       })
     }
 
-    if (environment.NODE_ENV === 'production' && !environment.DEEPSEEK_API_KEY) {
+    if (
+      environment.NODE_ENV === 'production' &&
+      !environment.DEEPSEEK_API_KEY
+    ) {
       context.addIssue({
         code: 'custom',
         message: '生产环境必须配置 DeepSeek API Key。',
@@ -123,6 +145,7 @@ export const config = {
   isProduction: environment.NODE_ENV === 'production',
   port: environment.PORT,
   host: environment.HOST,
+  trustedProxyAddresses: environment.TRUSTED_PROXY_ADDRESSES,
   databaseUrl: environment.DATABASE_URL,
   authSecret: environment.BETTER_AUTH_SECRET,
   authBaseUrl: environment.BETTER_AUTH_URL.replace(/\/$/, ''),

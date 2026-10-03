@@ -1,16 +1,24 @@
-import { ArrowLeft, Laptop, Smartphone, Tablet } from 'lucide-react'
+import { ChevronLeft, Laptop, Smartphone, Tablet, Terminal } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { authClient } from '../auth-client'
 import {
-  describeDevice,
   errorMessage,
-  formatDeviceLabel,
   formatSessionActivity,
+  formatSessionClient,
+  normalizeSessionClient,
   normalizeSessions,
   useArmConfirm,
 } from '../shared'
+import type { SessionClientIcon } from '../shared'
 import { LoadingState } from '../shared-ui'
+
+const sessionClientIcons: Record<SessionClientIcon, LucideIcon> = {
+  desktop: Laptop,
+  phone: Smartphone,
+  tablet: Tablet,
+  terminal: Terminal,
+}
 
 type WebSession = ReturnType<typeof normalizeSessions>[number]
 
@@ -41,6 +49,7 @@ export function SessionsPage() {
     authClient
       .listSessions()
       .then((result) => {
+        if (result.error) throw result.error
         if (active) {
           setSessions(normalizeSessions(result.data, currentToken))
         }
@@ -93,7 +102,7 @@ export function SessionsPage() {
   async function revokeOtherSessions() {
     setError(null)
     try {
-      const result = await authClient.revokeSessions()
+      const result = await authClient.revokeOtherSessions()
 
       if (result.error) {
         throw new Error(errorMessage(result.error))
@@ -127,7 +136,7 @@ export function SessionsPage() {
       <header className="security-header">
         <div className="security-header-slot">
           <a className="security-back-button" href="/account">
-            <ArrowLeft aria-hidden="true" />
+            <ChevronLeft aria-hidden="true" />
             账号中心
           </a>
         </div>
@@ -166,8 +175,10 @@ export function SessionsPage() {
         ) : (
           <div className="session-group">
             {sortedSessions.map((item) => {
-              const description = describeDevice(item.userAgent)
-              const DeviceIcon = deviceIcon(description.platform)
+              const client = formatSessionClient(
+                normalizeSessionClient({ userAgent: item.userAgent }),
+              )
+              const DeviceIcon = sessionClientIcons[client.icon]
               const activity = formatSessionActivity(item.updatedAt)
               const armKey = `revoke:${item.token}`
 
@@ -178,7 +189,7 @@ export function SessionsPage() {
                   </span>
                   <div className="session-copy">
                     <div className="session-name">
-                      {formatDeviceLabel(description)}
+                      {client.label}
                       {item.isCurrent ? (
                         <span className="session-current-badge">当前设备</span>
                       ) : null}
@@ -216,16 +227,4 @@ export function SessionsPage() {
       </section>
     </main>
   )
-}
-
-function deviceIcon(platform: string): LucideIcon {
-  if (platform === 'iPhone' || platform === 'Android') {
-    return Smartphone
-  }
-
-  if (platform === 'iPad') {
-    return Tablet
-  }
-
-  return Laptop
 }

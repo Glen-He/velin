@@ -1,0 +1,43 @@
+@media (max-width: 960px) {
+  .message-bubble {
+    max-width: 88%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  .app-shell.is-sidebar-animating,
+  .workspace-surface,
+  .sidebar,
+  .sidebar-resize-handle,
+  .settings-switch-thumb {
+    transition: none;
+  }
+
+  .conversation-drag-preview {
+    animation: none;
+    transform: none;
+  }
+
+  .conversation-item-row {
+    transition: none;
+  }
+
+  .message-actions {
+    transition: none;
+  }
+
+  .scroll-to-bottom-button,
+  .generation-dots > span,
+  .desktop-auth-spinner {
+    animation: none;
+  }
+}
