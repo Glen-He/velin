@@ -1,3 +1,5 @@
+'use client'
+
 import { ActionGroup, Button } from './Button'
 import { useId } from 'react'
 import { Modal } from './Modal'

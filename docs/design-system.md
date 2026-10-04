@@ -23,7 +23,7 @@
 
 系统主题和显式主题共用同一套色板。同一主题下，客户端与网页使用相同语义配色；网页跟随系统，客户端可按偏好显式选择主题。桌面原来的 `--text`、`--surface` 等名称仅作为语义别名保留；不能在组件里另造一套深浅色值。品牌图标的官方颜色、代码高亮主题和主题预览是有明确用途的例外。
 
-`color-icon-muted` 只用于图标，辅助文字使用 `color-secondary`；`color-blue` 用于焦点和图形，链接使用 `color-blue-text`，白字实体填充与选中状态使用 `color-accent-fill`。危险提示使用 `color-danger-text`，白字最终确认使用 `color-danger-fill`。中性、链接与普通主操作文字按实际背景检查至少 4.5:1；常态危险色按已确认的 Apple 默认鲜艳红显示，增强对比度模式再满足 4.5:1 配对，见 `tests/design-contrast.test.ts`；语义按钮、滚动和布局细则见 [界面约束](interface-guidelines.md)，选择依据见 [工程与设计维护规范](engineering-guidelines.md)。
+`color-icon-muted` 只用于图标，辅助文字使用 `color-secondary`；`color-blue` 用于焦点和图形，链接使用 `color-blue-text`，白字实体填充与选中状态使用 `color-accent-fill`。危险提示使用 `color-danger-text`，白字最终确认使用 `color-danger-fill`。中性、链接与普通主操作文字按实际背景检查至少 4.5:1；常态危险色按已确认的 Apple 默认鲜艳红显示，增强对比度模式再满足 4.5:1 配对，见 `packages/ui/tests/design-contrast.test.ts`；语义按钮、滚动和布局细则见 [界面约束](interface-guidelines.md)，选择依据见 [工程与设计维护规范](engineering-guidelines.md)。
 
 ## 组件与布局
 
@@ -84,7 +84,7 @@
 
 ## 样式维护
 
-`src/styles` 按窗口、认证、对话、设置与响应式规则拆分；`apps/auth-web/src/styles` 按认证、账号、安全、对话框与动效拆分。入口中的导入顺序保留原有级联，调整顺序属于行为变化。
+`apps/desktop/src/renderer/styles` 按窗口、认证、对话、设置与响应式规则拆分；`apps/web/src/styles` 按认证、账号、安全、对话框与动效拆分。入口中的导入顺序保留原有级联，调整顺序属于行为变化。
 
 新增视觉值先检查已有角色。确需新增时，在令牌层说明用途；不要用反复追加覆盖选择器解决基础分类错误。像素用于控件、边框和稳定几何；rem 用于文字和按字号约束行长的阅读列；弹性单位用于内容与窗口适配。
 

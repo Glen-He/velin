@@ -1,0 +1,7 @@
+@import '@velin/ui/tokens.css';
+@import '../styles/base.css';
+@import '../styles/auth.css';
+@import '../styles/security.css';
+@import '../styles/motion.css';
+@import '../styles/account.css';
+@import '../styles/dialogs.css';

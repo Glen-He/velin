@@ -1,6 +1,9 @@
 import { isRecord } from './value.js'
+import { passwordPolicyMessage } from './policy.js'
 
 const codeCopy: Readonly<Record<string, string>> = {
+  INVALID_EMAIL: '请输入有效的邮箱地址。',
+  PASSWORD_POLICY_VIOLATION: passwordPolicyMessage,
   INVALID_EMAIL_OR_PASSWORD: '邮箱或密码不正确。',
   INVALID_PASSWORD: '密码不正确，请重新输入。',
   INVALID_OTP: '验证码不正确，请重新输入。',
@@ -8,6 +11,11 @@ const codeCopy: Readonly<Record<string, string>> = {
   TOO_MANY_REQUESTS: '尝试次数过多，请稍后再试。',
   USER_NOT_FOUND: '没有找到该账号。',
   USER_ALREADY_EXISTS: '该邮箱已注册，请直接登录。',
+  USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL: '该邮箱已注册，请直接登录。',
+  PASSWORD_TOO_SHORT: '密码太短，请按密码要求重新输入。',
+  PASSWORD_TOO_LONG: '密码太长，请按密码要求重新输入。',
+  INVALID_CODE: '验证码不正确，请重新输入。',
+  INVALID_BACKUP_CODE: '恢复码不正确，请重新输入。',
   EMAIL_NOT_VERIFIED: '请先完成邮箱验证。',
   SESSION_EXPIRED: '登录已过期，请重新登录。',
 }

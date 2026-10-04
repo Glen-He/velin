@@ -1,3 +1,5 @@
+'use client'
+
 import { ActionGroup, Button } from './Button'
 import { Camera } from 'lucide-react'
 import type { ReactNode } from 'react'

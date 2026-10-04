@@ -1,3 +1,5 @@
+'use client'
+
 import './truncated-text.css'
 
 type TruncatedTextProps = {

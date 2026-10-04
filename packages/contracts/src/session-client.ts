@@ -175,7 +175,7 @@ export function normalizeSessionClient(input: {
     osVersion: parser?.getOS().version || null,
   }
 
-  // 能自己说明身份的客户端优先，UA 只作为拿不到 metadata 时的兼容回退。
+  // 桌面客户端优先使用显式 metadata；浏览器会话则依据 User-Agent 识别。
   if (clientMetadata) {
     return createInfo(
       'desktop',

@@ -6,6 +6,10 @@ release/
 .pnpm-store/
 .cache/
 .vite/
+.next/
+.next-dev/
+out/
+next-env.d.ts
 
 # 本地环境与凭据；只提交可公开的配置模板。
 .env

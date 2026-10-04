@@ -8,9 +8,9 @@ export const avatarLimits = {
   sourceBytes: 8 * 1024 * 1024,
   outputSize: 256,
 } as const
-export const passwordPolicy = { minimum: 15, maximum: 128 } as const
-export const passwordPolicyMessage =
-  '密码需为 15–128 个字符，可使用空格和中文。'
+export const passwordPolicy = { minimum: 8, maximum: 32 } as const
+export const passwordPolicyHint = '8–32 位英文、数字或符号'
+export const passwordPolicyMessage = `${passwordPolicyHint}，不含空格。`
 
 function hasControlCharacters(value: string) {
   return [...value].some((character) => {
@@ -22,9 +22,9 @@ function hasControlCharacters(value: string) {
 export function isValidNewPassword(value: unknown): value is string {
   return (
     typeof value === 'string' &&
-    [...value].length >= passwordPolicy.minimum &&
-    [...value].length <= passwordPolicy.maximum &&
-    !hasControlCharacters(value)
+    value.length >= passwordPolicy.minimum &&
+    value.length <= passwordPolicy.maximum &&
+    /^[\x21-\x7e]+$/.test(value)
   )
 }
 

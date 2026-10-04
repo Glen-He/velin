@@ -1,3 +1,5 @@
+'use client'
+
 import { ActionGroup, Button } from './Button'
 import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactNode } from 'react'

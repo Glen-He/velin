@@ -2,7 +2,7 @@
 
 ## 信任边界
 
-Renderer 只持有可展示资料与会话 ID。Cookie、会话 token 和 PKCE verifier 留在 Electron Main。`electron/auth/session-dto.ts` 通过白名单构造设备 DTO；撤销设备时 Main 重新读取本用户的列表，把 ID 解析成服务端所需 token，不允许 renderer 直接指定凭据。
+Renderer 只持有可展示资料与会话 ID。Cookie、会话 token 和 PKCE verifier 留在 Electron Main。`apps/desktop/src/main/auth/session-dto.ts` 通过白名单构造设备 DTO；撤销设备时 Main 重新读取本用户的列表，把 ID 解析成服务端所需 token，不允许 renderer 直接指定凭据。
 
 模型请求沿 typed preload → Main → 服务端流动。IPC 和 HTTP 都验证同一个 contracts schema；服务端重新判定有效会话、请求预算与速率限制。
 
@@ -29,11 +29,12 @@ Renderer 只持有可展示资料与会话 ID。Cookie、会话 token 和 PKCE v
 - TOTP 与恢复码复用库端点，升级时 `trustDevice: false`。未完成双重认证配置的账号不允许借升级路径完成配置。
 - 通行密钥验证要求真实 user verification；验证结果必须属于原会话用户。库创建的临时登录会话立即删除，不把新会话 Cookie 交给升级调用方。
 - 自定义 Cookie 路由先校验外层 Origin 和 JSON 内容类型，再构造内部认证请求。没有来源的浏览器敏感请求拒绝；Electron 使用自己的认证 API 通道。
-- 生产升级发送与验证按账号计数，并用数据库原子更新处理并发。内部认证调用以不可对外获得的进程标记避免重复落入共享限流桶；直接认证请求仍按库规则限流。Node 入口从真实 socket 获取地址并覆盖客户端地址头。只有 `TRUSTED_PROXY_ADDRESSES` 明确登记的代理才能提供转发链，链的解析交给认证库；代理须追加或覆盖 `X-Forwarded-For`，禁止直接透传用户伪造的值。
+- 生产升级发送与验证按账号计数，并用数据库原子更新处理并发。内部认证调用以不可对外获得的进程标记避免重复落入共享限流桶；直接认证请求仍按库规则限流。Node 入口从真实 socket 获取地址并覆盖客户端地址头。只有 `TRUSTED_PROXY_ADDRESSES` 明确登记的代理才能提供转发链，地址选择由统一的连接边界完成；代理须追加或覆盖 `X-Forwarded-For`，禁止直接透传用户伪造的值。
+- 认证限流出口使用标准 `Retry-After` 秒数与中文反馈。pg 的 int8 在应用连接池中解码为 bigint，保持精度并避免认证库计算时间戳时发生字符串拼接，不修改数据库字段或全局解析器。
 - 生产强制 SMTP、HTTPS 和禁用开发回码；本地 console 邮件与 5 秒冷却只用于开发。
 - Better Auth 1.7.6 的 `runInBackgroundOrAwait` 会吞掉邮件失败。`required-delivery.ts` 通过公开的 plugin context 扩展改为等待并传播失败；客户端只有服务端确认投递成功才进入冷却。已有账号可通过邮箱验证码登录入口重新发送，避免以再次注册充当恢复路径。
 
-新密码使用 contracts 中的统一策略：15–128 个字符，允许空格与 Unicode，拒绝控制字符，不强制字符类别。原密码登录继续由认证库校验。密码哈希与校验始终由认证库实现，客户端不处理密码学。
+新密码使用 contracts 中的统一策略：8–32 位英文字母、数字或英文符号，拒绝中文、空格、其他空白字符与控制字符，不强制字符类别。原密码登录继续由认证库校验。密码哈希与校验始终由认证库实现，客户端不处理密码学。
 
 ## 请求生命周期
 
@@ -43,7 +44,7 @@ Renderer 只持有可展示资料与会话 ID。Cookie、会话 token 和 PKCE v
 
 ## 验证
 
-`apps/auth-server/tests/security.integration.test.ts` 使用 Hono 的真实 HTTP 边界、Better Auth 与 PostgreSQL，覆盖会话、Origin、直接写入、验证码重放、恢复码、授权绑定/过期/并发消费、多设备撤销和数据库限流。
+`apps/web/tests/security.integration.test.ts` 使用 Next.js Route Handler 的 HTTP 请求边界、Better Auth 与 PostgreSQL，覆盖会话、Origin、直接写入、验证码重放、恢复码、授权绑定/过期/并发消费、多设备撤销和数据库限流。
 
 `production-security.integration.test.ts` 另起隔离测试进程，以 production 配置检查 Secure Cookie、客户端地址头防伪、SMTP 连接失败、禁用开发回码及 HTTP 429/Retry-After。OAuth 与模型凭据使用不会对外调用的 fixture；SMTP 失败使用本机未监听端口。
 

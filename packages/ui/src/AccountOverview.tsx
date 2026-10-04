@@ -1,3 +1,5 @@
+'use client'
+
 import { TruncatedText } from './TruncatedText'
 import { Camera, Pencil } from 'lucide-react'
 import type { ReactNode } from 'react'

@@ -1,19 +1,45 @@
 # 模块与职责
 
-| 位置                                | 职责                                             | 允许依赖                                    |
-| ----------------------------------- | ------------------------------------------------ | ------------------------------------------- |
-| `packages/contracts`                | 跨端协议、边界 schema、纯策略与设备显示规则      | Zod、纯解析工具；无 Electron、React、数据库 |
-| `packages/ui`                       | 视觉令牌、主题、原生模态、字段与图像原语         | React、DOM、Lucide；无特权 API              |
-| `src/features/chat`                 | 对话状态、流式事件、输入与长文展示               | contracts、UI、typed preload                |
-| `src/features/shell`                | 侧栏几何、窗口状态与手势生命周期                 | DOM、窗口 preload                           |
-| `src/features/preferences`          | 偏好类型、设置持久化与根主题同步                 | localStorage；不依赖设置页面                |
-| `src/features/settings` / `account` | 页面组装、设置分类与账号操作                     | UI、typed preload                           |
-| `electron/auth` / `chat`            | 安全凭据与远端调用、流式适配                     | Electron、认证库、contracts                 |
-| `apps/auth-web/src/auth`            | 系统浏览器登录、凭据请求、桌面授权交接           | auth client、HTTP、UI                       |
-| `apps/auth-web/src/security`        | 一次性授权、步骤历史、收件人发送槽与敏感操作呈现 | auth client、HTTP、contracts                |
-| `apps/auth-server/src`              | HTTP 组装、认证、授权、模型代理、数据库          | 服务端库、contracts                         |
+Velin 使用 pnpm workspace，包含两个应用：Electron 桌面客户端与一个 Next.js 全栈应用。网页登录和 HTTP 服务属于同一个 Web 应用，不另拆 frontend/backend；根目录只承担 workspace 命令、依赖锁定和仓库级规则。
 
-入口以组装为主。网页 `App` 按路由懒加载页面；服务端 `app.ts` 可被 HTTP 测试加载，`server.ts` 只负责监听和关闭。设置按账号、外观、偏好分类；不按文件行数强行把同一流程拆成无意义的小文件。
+```text
+apps/desktop/src/renderer → typed preload → Main → Next.js HTTP API
+                                                     ↓
+Next.js Server Component → apps/web/src/lib → PostgreSQL / 外部服务
+```
+
+| 位置                             | 职责                                        | 允许依赖                                |
+| -------------------------------- | ------------------------------------------- | --------------------------------------- |
+| `apps/web/src/app`               | URL、页面/layout、loading/error 与 API 入口 | components、lib、Next.js                |
+| `apps/web/src/components`        | 网页展示、表单、账号与安全交互              | UI、浏览器 auth client、HTTP、contracts |
+| `apps/web/src/lib`               | 认证、业务策略、SQL、模型代理与 HTTP 边界   | 服务端库、contracts；浏览器适配独立模块 |
+| `apps/web/scripts/web-server.ts` | Next.js 启动、连接地址验证、关闭            | Node、Next.js、配置与日志               |
+| `apps/web/migrations`            | PostgreSQL 版本化迁移                       | 现有 SQL 迁移工具                       |
+| `apps/desktop/src/main`          | 窗口、IPC、安全凭据与远端调用               | Electron、认证库、contracts             |
+| `apps/desktop/src/preload`       | 窄类型桥接                                  | Electron、contracts                     |
+| `apps/desktop/src/renderer`      | 对话、设置、账号展示与本地偏好              | DOM、UI、contracts、typed preload       |
+| `packages/contracts`             | 跨端协议、边界 schema 与纯策略              | Zod、纯解析工具；无特权 runtime         |
+| `packages/ui`                    | 视觉令牌、主题、模态、字段与图像原语        | React、DOM、Lucide；无特权 API          |
+
+## Web 的入口与业务
+
+`page.tsx` 和 `layout.tsx` 默认是 Server Component，负责页面组合与服务端数据入口。账号布局在服务端检查会话，账号页面直接读取业务能力，只将可展示的用户字段交给交互组件，不把 session token 序列化给浏览器组件。登录、设备和安全操作需要真实交互，因此保留明确的 Client Component 边界。数据库和认证实现标记 `server-only`，不能进入客户端导入链。
+
+Route Handler 使用原生 Request/Response，调用 `lib` 中的业务函数；输入预算、来源、会话、权限与限流仍由服务端执行。聊天使用原生 Web Stream 发送共享事件协议，保留背压，连接关闭和超时取消上游请求。Server Component 不经自己的 HTTP API 绕路读取数据库；不为没有使用的 Server Actions 建空目录。
+
+`lib` 按真实职责组织 auth、database、security、chat 与 HTTP 边界。小模块保持简单，不把所有工具塞入 utils，也不为目录对称创造无用途的 shared 包。Client auth 与服务端 auth 分文件；客户端只能导入浏览器安全的适配。
+
+## 启动与部署
+
+一个很薄的 Node 入口启动 Next.js，所有页面和 API 路由仍由 Next.js 管理。它覆盖外部传入的客户端地址头，根据真实 socket 与显式可信代理生成限流地址，并处理服务器关闭。必须使用 `pnpm dev:web` 或 `pnpm start`，直接使用 `next dev/start` 会绕过这个地址边界。
+
+生产部署使用 Node 服务并在受控反向代理处终止 HTTPS，配置 `APP_URL` 和可信代理地址。此启动方式不使用 Next.js standalone 输出，也不直接部署为 Vercel/serverless 函数；更换部署方式前必须重新实现并验证连接地址信任边界。[Next.js 自定义服务说明](https://nextjs.org/docs/app/guides/custom-server)描述了该部署取舍。
+
+登录页保持浅色认证主题，账号与安全页面跟随系统主题；两个路由组分别提供根布局，跨组导航由框架执行完整页面加载，避免主题切换闪烁。CSS 级联顺序和共享令牌保留，迁移不顺手改造产品设计。
+
+网页外部状态订阅提供独立、稳定且两端一致的初始快照，副作用在 hydration 后执行。React 渲染回归与真实 Next.js 已登录页面验收分别覆盖 Hook 和完整入口，避免只验证 API 或未登录跳转。
+
+测试归所属应用或共享包，Web 的集成测试加载真实 Route Handler、Better Auth 与 PostgreSQL；传输大小测试另用实际 Node HTTP 连接。数据库测试必须显式指定隔离测试库。构建检查 Next.js 服务端/客户端边界，运行验收另覆盖实际 Next.js HTTP 服务与 Electron。
 
 聊天状态只有 `chat-store.ts` 一份。发送、编辑重发、请求登记与流式事件同步更新；React 用 `useSyncExternalStore` 读取快照。取消先让请求失效再发 IPC，迟到事件不再修改状态。账号改变时停止所有请求并清除该账号的数据。聊天当前仍保存在内存中，重构没有偷偷引入持久化格式或新的数据迁移。
 

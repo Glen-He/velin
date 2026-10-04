@@ -3,3 +3,7 @@ node_modules
 **/dist-electron
 **/*.local
 pnpm-lock.yaml
+
+**/.next
+**/.next-dev
+**/next-env.d.ts

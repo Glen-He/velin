@@ -1,20 +1,56 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
+  "plugins": [
+    "react",
+    "typescript",
+    "oxc"
+  ],
   "rules": {
     "id-match": [
       "error",
       "^[$A-Za-z_][$A-Za-z0-9_]*$",
-      { "properties": true, "classFields": true }
+      {
+        "properties": true,
+        "classFields": true
+      }
     ],
     "no-console": "error",
     "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
+    "react/only-export-components": [
+      "warn",
+      {
+        "allowConstantExport": true
+      }
+    ]
   },
   "overrides": [
     {
-      "files": ["apps/auth-server/src/logging.ts"],
-      "rules": { "no-console": "off" }
+      "files": [
+        "apps/web/src/lib/logging.ts"
+      ],
+      "rules": {
+        "no-console": "off"
+      }
+    },
+    {
+      "files": [
+        "apps/web/src/app/**/*.tsx"
+      ],
+      "rules": {
+        "react/only-export-components": [
+          "warn",
+          {
+            "allowConstantExport": true,
+            "allowExportNames": [
+              "dynamic",
+              "metadata",
+              "generateMetadata",
+              "revalidate",
+              "runtime"
+            ]
+          }
+        ]
+      }
     }
   ]
 }
