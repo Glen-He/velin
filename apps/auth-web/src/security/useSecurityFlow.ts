@@ -403,11 +403,6 @@ export function useSecurityFlow({
 
     setMessage(null)
 
-    if (newPassword !== confirmPassword) {
-      setMessage('两次输入的新密码不一致。')
-      return
-    }
-
     const policyError = newPasswordError(newPassword)
 
     if (policyError) {
@@ -432,11 +427,7 @@ export function useSecurityFlow({
       if (!requestController.current?.signal.aborted)
         onCompleted('密码已更新。')
     } catch (caughtError) {
-      setMessage(
-        caughtError instanceof Error && caughtError.message
-          ? caughtError.message
-          : '密码修改失败，请稍后重试。',
-      )
+      setMessage(errorMessage(caughtError, '密码修改失败，请稍后重试。'))
       setWorking(false)
     }
   }
@@ -589,11 +580,7 @@ export function useSecurityFlow({
 
       enterStage('backupCodes')
     } catch (caughtError) {
-      setMessage(
-        caughtError instanceof Error && caughtError.message
-          ? caughtError.message
-          : '动态验证码不正确。',
-      )
+      setMessage(errorMessage(caughtError, '动态验证码不正确。'))
     } finally {
       setWorking(false)
     }

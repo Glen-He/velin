@@ -8,6 +8,7 @@ import { config } from './config.js'
 import { databasePool } from './database.js'
 import { rememberDevCode, sendAuthenticationEmail } from './email.js'
 import { logger } from './logging.js'
+import { isRecord } from '@velin/contracts/value'
 import {
   isValidDisplayName,
   isValidNewPassword,
@@ -55,10 +56,6 @@ const socialProviders = config.google
       },
     }
   : undefined
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
 
 function validateNewPassword(password: unknown) {
   if (!isValidNewPassword(password)) {

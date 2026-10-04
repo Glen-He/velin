@@ -1,7 +1,11 @@
 import { createAuthStateSync } from './auth/auth-state-sync'
 import { isValidDisplayName } from '@velin/contracts/policy'
 import { errorMessage } from '@velin/contracts/error-copy'
-import { chatRequestSchema } from '@velin/contracts/chat-validation'
+import {
+  chatRequestSchema,
+  chatStopRequestSchema,
+} from '@velin/contracts/chat-validation'
+import { isRecord } from '@velin/contracts/value'
 import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from 'electron'
 import type {
   IpcMainEvent,
@@ -10,12 +14,7 @@ import type {
 } from 'electron'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import {
-  chatIpcChannels,
-  type ChatEvent,
-  type SendMessageRequest,
-  type StopMessageRequest,
-} from '@velin/contracts/chat-protocol'
+import { chatIpcChannels, type ChatEvent } from '@velin/contracts/chat-protocol'
 import {
   appMenuIpcChannels,
   type AppMenuAction,
@@ -304,31 +303,8 @@ function installApplicationMenu() {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
-
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0
-}
-
-function parseSendMessageRequest(payload: unknown): SendMessageRequest | null {
-  const parsed = chatRequestSchema.safeParse(payload)
-  return parsed.success ? parsed.data : null
-}
-
-function parseStopMessageRequest(payload: unknown): StopMessageRequest | null {
-  if (!isRecord(payload)) {
-    return null
-  }
-
-  const { requestId, conversationId } = payload
-
-  if (!isNonEmptyString(requestId) || !isNonEmptyString(conversationId)) {
-    return null
-  }
-
-  return { requestId, conversationId }
 }
 
 function isTrustedRenderer(event: IpcMainEvent | IpcMainInvokeEvent) {
@@ -410,9 +386,9 @@ function registerChatIpcHandlers() {
       return
     }
 
-    const request = parseSendMessageRequest(payload)
+    const parsed = chatRequestSchema.safeParse(payload)
 
-    if (!request) {
+    if (!parsed.success) {
       const payloadRecord = isRecord(payload) ? payload : {}
       const requestId = isNonEmptyString(payloadRecord.requestId)
         ? payloadRecord.requestId
@@ -425,6 +401,7 @@ function registerChatIpcHandlers() {
       return
     }
 
+    const request = parsed.data
     const started = chatRuntime.start(request, (chatEvent) => {
       emitChatEvent(event.sender, chatEvent)
     })
@@ -444,10 +421,10 @@ function registerChatIpcHandlers() {
       return
     }
 
-    const request = parseStopMessageRequest(payload)
+    const parsed = chatStopRequestSchema.safeParse(payload)
 
-    if (request) {
-      chatRuntime.stop(request.requestId, request.conversationId)
+    if (parsed.success) {
+      chatRuntime.stop(parsed.data.requestId, parsed.data.conversationId)
     }
   })
 }

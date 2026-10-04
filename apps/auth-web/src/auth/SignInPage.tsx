@@ -85,7 +85,6 @@ export function SignInPage() {
             variant="primary"
             size="regular"
             stretch
-            className="account-action-button"
             type="button"
             disabled={isSubmitting}
             onClick={() => void continueExistingSession()}
@@ -139,6 +138,7 @@ export function SignInPage() {
                 <button
                   className={mode !== 'sign-up' ? 'is-active' : undefined}
                   type="button"
+                  disabled={isSubmitting}
                   onClick={() => selectMode('password')}
                 >
                   登录
@@ -146,6 +146,7 @@ export function SignInPage() {
                 <button
                   className={mode === 'sign-up' ? 'is-active' : undefined}
                   type="button"
+                  disabled={isSubmitting}
                   onClick={() => selectMode('sign-up')}
                 >
                   注册
@@ -162,11 +163,13 @@ export function SignInPage() {
                 onSubmit={mode === 'sign-up' ? submitSignUp : submitPassword}
               >
                 <EmailField
+                  disabled={isSubmitting}
                   email={email}
                   setEmail={setEmail}
                   withPasskey={mode === 'password'}
                 />
                 <AuthField
+                  disabled={isSubmitting}
                   id="auth-password"
                   label={mode === 'sign-up' ? '设置密码' : '密码'}
                   icon={LockKeyhole}
@@ -216,6 +219,7 @@ export function SignInPage() {
                       <button
                         className="text-action"
                         type="button"
+                        disabled={isSubmitting}
                         onClick={() => selectMode('email-otp')}
                       >
                         使用邮箱验证码
@@ -223,6 +227,7 @@ export function SignInPage() {
                       <button
                         className="text-action"
                         type="button"
+                        disabled={isSubmitting}
                         onClick={() => selectMode('reset-request')}
                       >
                         忘记密码？
@@ -254,10 +259,16 @@ export function SignInPage() {
                 noValidate
                 onSubmit={submitEmailOtp}
               >
-                <EmailField email={email} setEmail={setEmail} withPasskey />
+                <EmailField
+                  disabled={isSubmitting}
+                  email={email}
+                  setEmail={setEmail}
+                  withPasskey
+                />
                 <div className="auth-field-slot">
                   {isEmailOtpSent && (
                     <AuthField
+                      disabled={isSubmitting}
                       code
                       id="auth-email-otp"
                       label="验证码"
@@ -277,6 +288,7 @@ export function SignInPage() {
                   <button
                     className="text-action"
                     type="button"
+                    disabled={isSubmitting}
                     onClick={() => selectMode('password')}
                   >
                     使用密码登录
@@ -307,6 +319,7 @@ export function SignInPage() {
                 onSubmit={submitEmailVerification}
               >
                 <AuthField
+                  disabled={isSubmitting}
                   code
                   id="auth-verification-code"
                   label="验证码"
@@ -335,10 +348,15 @@ export function SignInPage() {
 
             {(mode === 'reset-request' || mode === 'reset-confirm') && (
               <form className="auth-form" noValidate onSubmit={submitReset}>
-                <EmailField email={email} setEmail={setEmail} />
+                <EmailField
+                  disabled={isSubmitting}
+                  email={email}
+                  setEmail={setEmail}
+                />
                 {mode === 'reset-confirm' && (
                   <>
                     <AuthField
+                      disabled={isSubmitting}
                       code
                       id="auth-reset-code"
                       label="验证码"
@@ -353,6 +371,7 @@ export function SignInPage() {
                       }
                     />
                     <AuthField
+                      disabled={isSubmitting}
                       floating={false}
                       id="auth-reset-password"
                       label="新密码"
@@ -393,6 +412,7 @@ export function SignInPage() {
             {mode === 'two-factor' && (
               <form className="auth-form" noValidate onSubmit={submitTwoFactor}>
                 <AuthField
+                  disabled={isSubmitting}
                   code
                   id="auth-two-factor-code"
                   label={useBackupCode ? '恢复码' : '动态验证码'}
@@ -423,6 +443,7 @@ export function SignInPage() {
                 <button
                   className="text-action"
                   type="button"
+                  disabled={isSubmitting}
                   onClick={() => {
                     setOtp('')
                     setUseBackupCode((currentValue) => !currentValue)

@@ -17,9 +17,7 @@
   --accent: var(--color-primary);
   --accent-contrast: var(--color-on-primary);
   --user-bubble: var(--color-sunken);
-  --assistant-bubble: transparent;
   --danger: var(--color-danger-text);
-  --danger-fill: var(--color-danger-fill);
   --danger-background: var(--color-danger-soft);
   --menu-selection: var(--color-accent-fill);
   --menu-selection-text: var(--color-on-accent);
@@ -33,7 +31,6 @@
   --sidebar-control-height: 38px;
   --sidebar-inline-gutter: 10px;
   --sidebar-item-inline-padding: var(--space-5);
-  --corner-compact: var(--radius-compact);
   --corner-icon-button: var(--radius-menu-item);
   --corner-raised: var(--radius-field);
   --corner-sidebar-control: var(--radius-sidebar-item);

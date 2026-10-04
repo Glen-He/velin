@@ -42,12 +42,6 @@ html:has(.security-page) {
   letter-spacing: -0.03em;
 }
 
-.security-card {
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--web-radius-card);
-  background: var(--color-surface);
-}
-
 .security-state {
   color: var(--color-icon-muted);
   font-size: var(--type-caption);
@@ -258,13 +252,6 @@ html:has(.security-page) {
 .web-field:focus {
   border-color: var(--color-blue);
   box-shadow: none;
-}
-
-.panel-title {
-  color: var(--color-ink);
-  font-size: var(--type-body);
-  font-weight: var(--weight-medium);
-  line-height: 1.25;
 }
 
 .panel-hint {

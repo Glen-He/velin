@@ -4,6 +4,8 @@ import { chatLimits } from './policy.js'
 const eventBase = { requestId: z.uuid(), conversationId: z.uuid() }
 const messageBase = { ...eventBase, messageId: z.uuid() }
 
+export const chatStopRequestSchema = z.object(eventBase).strict()
+
 export const chatEventSchema = z.discriminatedUnion('type', [
   z.object({ ...messageBase, type: z.literal('message-start') }).strict(),
   z
@@ -27,8 +29,7 @@ export const chatEventSchema = z.discriminatedUnion('type', [
 
 export const chatRequestSchema = z
   .object({
-    requestId: z.uuid(),
-    conversationId: z.uuid(),
+    ...eventBase,
     messages: z
       .array(
         z

@@ -441,7 +441,11 @@ button:disabled {
 }
 
 .auth-provider-button:focus-visible,
-.auth-field-action:focus-visible,
+.auth-field-action:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
 .auth-field-hint {
   min-height: 18px;
   margin: 0;
@@ -543,16 +547,8 @@ button:disabled {
   text-align: center;
 }
 
-.account-action-button {
-  width: 100%;
-}
-
 .account-switch-button {
   margin-top: var(--space-7);
-}
-
-.link-button {
-  text-decoration: none;
 }
 
 .auth-code-result .pill-button {

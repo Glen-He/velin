@@ -248,13 +248,6 @@
   color: var(--color-danger-text);
 }
 
-.card-dialog-text {
-  margin: 0;
-  color: var(--text);
-  font-size: var(--type-body);
-  line-height: 1.5;
-}
-
 .sessions-list {
   display: flex;
   flex-direction: column;

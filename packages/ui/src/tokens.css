@@ -135,7 +135,6 @@
     var(--layout-auth-max-width) + var(--web-dialog-pad-inline) * 2
   );
   --web-dialog-pad-block: var(--space-10);
-  --web-dialog-button-gap: var(--space-5);
 }
 
 @media (pointer: coarse) {

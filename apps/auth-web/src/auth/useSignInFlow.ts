@@ -3,7 +3,9 @@ import type { FormEvent } from 'react'
 import { flushSync } from 'react-dom'
 import { authClient } from '../auth-client'
 import { authenticatePasskey } from './passkey'
-import { errorMessage } from '@velin/contracts/error-copy'
+import { createAuthActionRunner } from './auth-action'
+import type { AuthAction } from './auth-action'
+import { z } from 'zod'
 import { newPasswordError } from '@velin/contracts/policy'
 
 type AuthMode =
@@ -15,22 +17,15 @@ type AuthMode =
   | 'reset-confirm'
   | 'two-factor'
 
-type Capabilities = {
-  google: boolean
-  passkey: boolean
-  emailOtp: boolean
-  password: boolean
-  twoFactor: boolean
-  developmentEmailPreview: boolean
-}
+const capabilitiesSchema = z.object({
+  google: z.boolean(),
+  passkey: z.boolean(),
+})
+type Capabilities = z.infer<typeof capabilitiesSchema>
 
 const fallbackCapabilities: Capabilities = {
   google: false,
   passkey: true,
-  emailOtp: true,
-  password: true,
-  twoFactor: true,
-  developmentEmailPreview: false,
 }
 
 function getElectronQuery() {
@@ -78,7 +73,20 @@ export function useSignInFlow() {
   const [authorizationCode, setAuthorizationCode] = useState<string | null>(
     null,
   )
-  const transferStartedRef = useRef(false)
+  const conditionalRequest = useRef<AbortController | null>(null)
+  const [actions] = useState(() =>
+    createAuthActionRunner({
+      onPending(pending) {
+        if (pending) conditionalRequest.current?.abort()
+        setIsSubmitting(pending)
+      },
+      onError: setError,
+    }),
+  )
+  useEffect(() => {
+    actions.activate()
+    return actions.deactivate
+  }, [actions])
 
   // 已有会话时直接进入账号；桌面端授权流程（isElectronFlow）仍停在当前页完成交接。
   useEffect(() => {
@@ -88,18 +96,19 @@ export function useSignInFlow() {
   }, [session, isElectronFlow])
 
   useEffect(() => {
-    void fetch('/api/auth/capabilities')
+    const controller = new AbortController()
+    void fetch('/api/auth/capabilities', { signal: controller.signal })
       .then(async (response) => {
-        if (!response.ok) {
-          throw new Error('无法读取认证能力。')
-        }
-
-        return (await response.json()) as Capabilities
+        if (!response.ok) throw new Error('无法读取认证能力。')
+        return capabilitiesSchema.parse(await response.json())
       })
-      .then(setCapabilities)
+      .then((value) => {
+        if (!controller.signal.aborted) setCapabilities(value)
+      })
       .catch(() => {
-        setCapabilities(fallbackCapabilities)
+        if (!controller.signal.aborted) setCapabilities(fallbackCapabilities)
       })
+    return () => controller.abort()
   }, [])
 
   useEffect(() => {
@@ -114,6 +123,7 @@ export function useSignInFlow() {
   useEffect(() => {
     if (
       session ||
+      isSubmitting ||
       !capabilities.passkey ||
       mode !== 'password' ||
       typeof PublicKeyCredential === 'undefined' ||
@@ -121,6 +131,7 @@ export function useSignInFlow() {
     )
       return
     const controller = new AbortController()
+    conditionalRequest.current = controller
     void PublicKeyCredential.isConditionalMediationAvailable()
       .then(async (available) => {
         if (available && !controller.signal.aborted) {
@@ -135,8 +146,19 @@ export function useSignInFlow() {
       .catch(() => {
         /* 条件自动填充失败时，仍保留显式登录入口。 */
       })
-    return () => controller.abort()
-  }, [capabilities.passkey, electronQuery, mode, refetchSession, session])
+    return () => {
+      controller.abort()
+      if (conditionalRequest.current === controller)
+        conditionalRequest.current = null
+    }
+  }, [
+    capabilities.passkey,
+    electronQuery,
+    isSubmitting,
+    mode,
+    refetchSession,
+    session,
+  ])
 
   function resetFeedback() {
     setError(null)
@@ -144,6 +166,10 @@ export function useSignInFlow() {
   }
 
   function selectMode(nextMode: AuthMode) {
+    if (!actions.isPending()) changeMode(nextMode)
+  }
+
+  function changeMode(nextMode: AuthMode) {
     const updateMode = () => {
       resetFeedback()
       setOtp('')
@@ -183,36 +209,22 @@ export function useSignInFlow() {
     })
   }
 
-  async function finishElectronAuthentication() {
+  async function finishElectronAuthentication(action: AuthAction) {
     if (!isElectronFlow) {
       setMessage('登录成功。')
       return
     }
-
-    if (transferStartedRef.current) {
-      return
-    }
-
-    transferStartedRef.current = true
-    const { data, error: transferError } =
-      await authClient.electron.transferUser({
-        fetchOptions: { query: electronQuery },
-      })
-
-    if (transferError) {
-      transferStartedRef.current = false
-      throw new Error(errorMessage(transferError))
-    }
-
+    const data = await action.result(
+      authClient.electron.transferUser({
+        fetchOptions: { query: electronQuery, signal: action.signal },
+      }),
+    )
     if (
       !data ||
       !('electron_authorization_code' in data) ||
       typeof data.electron_authorization_code !== 'string'
-    ) {
-      transferStartedRef.current = false
+    )
       throw new Error('未取得授权码，请重新尝试。')
-    }
-
     setAuthorizationCode(
       encodeElectronAuthorizationCode(
         data.electron_authorization_code,
@@ -224,314 +236,204 @@ export function useSignInFlow() {
     )
   }
 
-  async function submitPassword(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+  function runAction(
+    operation: (action: AuthAction) => Promise<void>,
+    fallback: string,
+  ) {
+    if (actions.isPending()) return Promise.resolve()
     resetFeedback()
-    setIsSubmitting(true)
+    return actions.run(operation, fallback)
+  }
 
-    try {
-      const result = await authClient.signIn.email({
-        email,
-        password,
-        rememberMe: true,
-        fetchOptions: { query: electronQuery },
-      })
-
-      if (result.error) {
-        throw new Error(errorMessage(result.error))
-      }
-
-      if (
-        result.data &&
-        'twoFactorRedirect' in result.data &&
-        result.data.twoFactorRedirect
-      ) {
-        selectMode('two-factor')
+  function submitPassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    return runAction(async (action) => {
+      const data = await action.result(
+        authClient.signIn.email({
+          email,
+          password,
+          rememberMe: true,
+          fetchOptions: { query: electronQuery, signal: action.signal },
+        }),
+      )
+      if (data && 'twoFactorRedirect' in data && data.twoFactorRedirect) {
+        changeMode('two-factor')
         setMessage('请输入验证器中的动态验证码。')
         return
       }
-
-      await finishElectronAuthentication()
-    } catch (caughtError) {
-      setError(
-        caughtError instanceof Error ? caughtError.message : '登录失败。',
-      )
-    } finally {
-      setIsSubmitting(false)
-    }
+      await finishElectronAuthentication(action)
+    }, '登录失败，请稍后重试。')
   }
 
-  async function submitEmailOtp(event: FormEvent<HTMLFormElement>) {
+  function submitEmailOtp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    resetFeedback()
-    setIsSubmitting(true)
-
-    try {
+    return runAction(async (action) => {
       if (!isEmailOtpSent) {
-        const { error: sendError } =
-          await authClient.emailOtp.sendVerificationOtp({
+        await action.result(
+          authClient.emailOtp.sendVerificationOtp({
             email,
             type: 'sign-in',
-          })
-
-        if (sendError) {
-          throw new Error(errorMessage(sendError))
-        }
-
+            fetchOptions: { signal: action.signal },
+          }),
+        )
         setIsEmailOtpSent(true)
         setMessage('验证码已发送，有效期 5 分钟。')
         return
       }
-
-      const result = await authClient.signIn.emailOtp({
-        email,
-        otp,
-        fetchOptions: { query: electronQuery },
-      })
-
-      if (result.error) {
-        throw new Error(errorMessage(result.error))
-      }
-
-      await finishElectronAuthentication()
-    } catch (caughtError) {
-      setError(
-        caughtError instanceof Error ? caughtError.message : '验证码登录失败。',
-      )
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  async function submitSignUp(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    resetFeedback()
-
-    const nextPasswordError = newPasswordError(password)
-    setPasswordError(nextPasswordError)
-    if (nextPasswordError) return
-
-    setIsSubmitting(true)
-
-    try {
-      const { error: signUpError } = await authClient.$fetch('/sign-up/email', {
-        method: 'POST',
-        body: { email, password },
-      })
-
-      if (signUpError) {
-        throw new Error(errorMessage(signUpError))
-      }
-
-      selectMode('verify-email')
-      setMessage('账号已创建，请输入邮件中的验证码完成邮箱验证。')
-    } catch (caughtError) {
-      setError(
-        caughtError instanceof Error ? caughtError.message : '注册失败。',
-      )
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  async function submitEmailVerification(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    resetFeedback()
-    setIsSubmitting(true)
-
-    try {
-      const { error: verificationError } =
-        await authClient.emailOtp.verifyEmail({
+      await action.result(
+        authClient.signIn.emailOtp({
           email,
           otp,
-        })
-
-      if (verificationError) {
-        throw new Error(errorMessage(verificationError))
-      }
-
-      const signInResult = await authClient.signIn.email({
-        email,
-        password,
-        rememberMe: true,
-        fetchOptions: { query: electronQuery },
-      })
-
-      if (signInResult.error) {
-        throw new Error(errorMessage(signInResult.error))
-      }
-
-      await finishElectronAuthentication()
-    } catch (caughtError) {
-      setError(
-        caughtError instanceof Error ? caughtError.message : '邮箱验证失败。',
+          fetchOptions: { query: electronQuery, signal: action.signal },
+        }),
       )
-    } finally {
-      setIsSubmitting(false)
-    }
+      await finishElectronAuthentication(action)
+    }, '验证码登录失败，请稍后重试。')
   }
 
-  async function submitReset(event: FormEvent<HTMLFormElement>) {
+  function validatePassword() {
+    const nextError = newPasswordError(password)
+    setPasswordError(nextError)
+    return !nextError
+  }
+
+  function submitSignUp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    resetFeedback()
+    if (actions.isPending() || !validatePassword()) return
+    return runAction(async (action) => {
+      await action.result(
+        authClient.$fetch('/sign-up/email', {
+          method: 'POST',
+          body: { email, password },
+          signal: action.signal,
+        }),
+      )
+      changeMode('verify-email')
+      setMessage('账号已创建，请输入邮件中的验证码完成邮箱验证。')
+    }, '注册失败，请稍后重试。')
+  }
 
-    if (mode === 'reset-confirm') {
-      const nextPasswordError = newPasswordError(password)
-      setPasswordError(nextPasswordError)
-      if (nextPasswordError) return
-    }
+  function submitEmailVerification(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    return runAction(async (action) => {
+      await action.result(
+        authClient.emailOtp.verifyEmail({
+          email,
+          otp,
+          fetchOptions: { signal: action.signal },
+        }),
+      )
+      const data = await action.result(
+        authClient.signIn.email({
+          email,
+          password,
+          rememberMe: true,
+          fetchOptions: { query: electronQuery, signal: action.signal },
+        }),
+      )
+      if (data && 'twoFactorRedirect' in data && data.twoFactorRedirect) {
+        changeMode('two-factor')
+        return
+      }
+      await finishElectronAuthentication(action)
+    }, '邮箱验证失败，请稍后重试。')
+  }
 
-    setIsSubmitting(true)
-
-    try {
+  function submitReset(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (
+      actions.isPending() ||
+      (mode === 'reset-confirm' && !validatePassword())
+    )
+      return
+    return runAction(async (action) => {
       if (mode === 'reset-request') {
-        const { error: sendError } =
-          await authClient.emailOtp.sendVerificationOtp({
+        await action.result(
+          authClient.emailOtp.sendVerificationOtp({
             email,
             type: 'forget-password',
-          })
-
-        if (sendError) {
-          throw new Error(errorMessage(sendError))
-        }
-
-        selectMode('reset-confirm')
+            fetchOptions: { signal: action.signal },
+          }),
+        )
+        changeMode('reset-confirm')
         setMessage('如果账号存在，重置验证码已发送。')
         return
       }
-
-      const { error: resetError } = await authClient.emailOtp.resetPassword({
-        email,
-        otp,
-        password,
-      })
-
-      if (resetError) {
-        throw new Error(errorMessage(resetError))
-      }
-
-      selectMode('password')
-      setOtp('')
+      await action.result(
+        authClient.emailOtp.resetPassword({
+          email,
+          otp,
+          password,
+          fetchOptions: { signal: action.signal },
+        }),
+      )
+      changeMode('password')
       setPassword('')
       setMessage('密码已更新，请重新登录。')
-    } catch (caughtError) {
-      setError(
-        caughtError instanceof Error ? caughtError.message : '密码重置失败。',
-      )
-    } finally {
-      setIsSubmitting(false)
-    }
+    }, '密码重置失败，请稍后重试。')
   }
 
-  async function submitTwoFactor(event: FormEvent<HTMLFormElement>) {
+  function submitTwoFactor(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    resetFeedback()
-    setIsSubmitting(true)
-
-    try {
-      const result = useBackupCode
-        ? await authClient.twoFactor.verifyBackupCode({
-            code: otp,
-            trustDevice,
-          })
-        : await authClient.twoFactor.verifyTotp({
-            code: otp,
-            trustDevice,
-          })
-
-      if (result.error) {
-        throw new Error(errorMessage(result.error))
+    return runAction(async (action) => {
+      const options = {
+        code: otp,
+        trustDevice,
+        fetchOptions: { signal: action.signal },
       }
-
-      await finishElectronAuthentication()
-    } catch (caughtError) {
-      setError(
-        caughtError instanceof Error ? caughtError.message : '验证失败。',
+      await action.result(
+        useBackupCode
+          ? authClient.twoFactor.verifyBackupCode(options)
+          : authClient.twoFactor.verifyTotp(options),
       )
-    } finally {
-      setIsSubmitting(false)
-    }
+      await finishElectronAuthentication(action)
+    }, '验证失败，请稍后重试。')
   }
 
-  async function signInWithPasskey() {
-    resetFeedback()
-    setIsSubmitting(true)
-
-    try {
-      await authenticatePasskey({ query: electronQuery })
-
-      await finishElectronAuthentication()
-    } catch (caughtError) {
-      setError(
-        caughtError instanceof Error
-          ? caughtError.message
-          : '通行密钥登录失败。',
+  function signInWithPasskey() {
+    return runAction(async (action) => {
+      await action.wait(
+        authenticatePasskey({ query: electronQuery, signal: action.signal }),
       )
-    } finally {
-      setIsSubmitting(false)
-    }
+      await finishElectronAuthentication(action)
+    }, '通行密钥登录失败，请稍后重试。')
   }
 
-  async function signInWithGoogle() {
-    resetFeedback()
-
-    if (!capabilities.google) {
-      setError('本地环境尚未配置 Google OAuth 凭据。')
-      return
-    }
-
-    setIsSubmitting(true)
-
-    try {
-      const result = await authClient.signIn.social({
-        provider: 'google',
-        callbackURL: `${window.location.origin}${window.location.pathname}${window.location.search}`,
-        fetchOptions: { query: electronQuery },
-      })
-      if (result.error) throw new Error(errorMessage(result.error))
-    } catch (cause) {
-      setError(errorMessage(cause, '无法发起 Google 登录。'))
-    } finally {
-      setIsSubmitting(false)
-    }
+  function signInWithGoogle() {
+    return runAction(async (action) => {
+      if (!capabilities.google)
+        throw new Error('本地环境尚未配置 Google OAuth 凭据。')
+      await action.result(
+        authClient.signIn.social({
+          provider: 'google',
+          callbackURL: window.location.href,
+          fetchOptions: { query: electronQuery, signal: action.signal },
+        }),
+      )
+    }, '无法发起 Google 登录，请稍后重试。')
   }
 
-  async function continueExistingSession() {
-    resetFeedback()
-    setIsSubmitting(true)
-
-    try {
-      await finishElectronAuthentication()
-    } catch (caughtError) {
-      setError(
-        caughtError instanceof Error ? caughtError.message : '无法返回 Velin。',
-      )
-    } finally {
-      setIsSubmitting(false)
-    }
+  function continueExistingSession() {
+    return runAction(finishElectronAuthentication, '无法返回 Velin，请重试。')
   }
 
-  async function handleUseAnotherAccount() {
-    resetFeedback()
-    setIsSubmitting(true)
-
-    try {
-      const result = await authClient.signOut()
-
-      if (result.error) {
-        throw new Error(errorMessage(result.error))
-      }
-
-      transferStartedRef.current = false
-      await refetchSession()
-      selectMode('password')
-    } catch (caughtError) {
-      setError(
-        caughtError instanceof Error ? caughtError.message : '无法切换账号。',
+  function handleUseAnotherAccount() {
+    return runAction(async (action) => {
+      await action.result(
+        authClient.signOut({ fetchOptions: { signal: action.signal } }),
       )
-    } finally {
-      setIsSubmitting(false)
-    }
+      await action.wait(refetchSession())
+      changeMode('password')
+    }, '无法切换账号，请稍后重试。')
+  }
+
+  function changeEmail(value: string) {
+    if (actions.isPending()) return
+    setEmail(value)
+    setOtp('')
+    setIsEmailOtpSent(false)
+    resetFeedback()
+    if (mode === 'reset-confirm') changeMode('reset-request')
   }
 
   const title =
@@ -577,7 +479,7 @@ export function useSignInFlow() {
     isElectronFlow,
     mode,
     email,
-    setEmail,
+    setEmail: changeEmail,
     password,
     setPassword,
     showPassword,

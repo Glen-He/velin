@@ -25,6 +25,32 @@ test('API errors and malformed payloads show failure instead of an empty list', 
   }
 })
 
+test('missing current-session identity and duplicate tokens disable device writes', async () => {
+  for (const [data, token] of [
+    [success.data, null],
+    [success.data, 'unmatched-token'],
+    [[{ token: 'current' }, { token: 'current' }], 'current'],
+  ] as const) {
+    let writes = 0
+    const store = createSessionList({
+      list: async () => ({ data: [...data] }),
+      revoke: async () => {
+        writes++
+        return {}
+      },
+      revokeOthers: async () => {
+        writes++
+        return {}
+      },
+    })
+    await store.selectAccount('user', token)
+    assert.equal(store.getSnapshot().sessions, null)
+    assert.ok(store.getSnapshot().error)
+    assert.equal(await store.revoke(null), false)
+    assert.equal(writes, 0)
+  }
+})
+
 test('account changes cancel reads and ignore late results from the previous account', async () => {
   const first = deferred<typeof success>()
   const signals: AbortSignal[] = []
@@ -78,6 +104,8 @@ test('duplicate mutations are blocked and successful revocation survives a faile
   await store.selectAccount('user', 'current')
   const first = store.revoke('other')
   await store.revoke('other')
+  await store.reload()
+  assert.equal(reads, 1)
   mutation.resolve({ data: null })
   await first
   assert.equal(writes, 1)

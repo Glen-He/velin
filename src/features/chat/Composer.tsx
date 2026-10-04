@@ -67,8 +67,9 @@ function Composer({ isStreaming, sendOnEnter, onSend, onStop }: ComposerProps) {
         <button
           className="composer-attachment-button"
           type="button"
-          aria-label="添加附件"
-          title="添加附件"
+          disabled
+          aria-label="添加附件（暂未开放）"
+          title="附件功能暂未开放"
         >
           <Plus className="composer-attachment-icon" aria-hidden="true" />
         </button>

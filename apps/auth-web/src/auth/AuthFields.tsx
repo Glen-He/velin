@@ -6,10 +6,12 @@ export function EmailField({
   email,
   setEmail,
   withPasskey = false,
+  disabled = false,
 }: {
   email: string
   setEmail: (email: string) => void
   withPasskey?: boolean
+  disabled?: boolean
 }) {
   return (
     <AuthField
@@ -20,6 +22,7 @@ export function EmailField({
       autoCapitalize="none"
       autoComplete={withPasskey ? 'username webauthn' : 'email'}
       inputMode="email"
+      disabled={disabled}
       required
       type="email"
       value={email}

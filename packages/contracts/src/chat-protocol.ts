@@ -1,5 +1,9 @@
 import type { z } from 'zod'
-import type { chatEventSchema } from './chat-validation.js'
+import type {
+  chatEventSchema,
+  chatRequestSchema,
+  chatStopRequestSchema,
+} from './chat-validation.js'
 
 export const chatIpcChannels = {
   send: 'velin:chat:send',
@@ -8,18 +12,7 @@ export const chatIpcChannels = {
   openExternalLink: 'velin:chat:open-external-link',
 } as const
 
-export type SendMessageRequest = {
-  requestId: string
-  conversationId: string
-  messages: Array<{
-    role: 'user' | 'assistant'
-    content: string
-  }>
-}
-
-export type StopMessageRequest = {
-  requestId: string
-  conversationId: string
-}
+export type SendMessageRequest = z.infer<typeof chatRequestSchema>
+export type StopMessageRequest = z.infer<typeof chatStopRequestSchema>
 
 export type ChatEvent = z.infer<typeof chatEventSchema>

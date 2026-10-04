@@ -692,9 +692,15 @@
   transform: translateY(-0.5px);
 }
 
-.composer-attachment-button:hover {
+.composer-attachment-button:hover:not(:disabled) {
   background: var(--surface-muted);
   color: var(--text);
+}
+
+.composer-attachment-button:disabled {
+  color: var(--color-secondary);
+  cursor: default;
+  opacity: 0.65;
 }
 
 .composer textarea {

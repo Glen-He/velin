@@ -73,68 +73,46 @@ const electronClientOptions = {
   sanitizeUser,
 } satisfies ElectronClientOptions
 
-const configuredElectronClient = electronClient(electronClientOptions)
-const configuredRegistrationClient = electronClient({
-  ...electronClientOptions,
-  signInURL: `${authWebUrl}/sign-in?mode=sign-up`,
-})
-const configuredManualCodeClient = electronClient({
-  ...electronClientOptions,
-  signInURL: `${authWebUrl}/sign-in?flow=manual-code`,
-})
-const configuredManualRegistrationClient = electronClient({
-  ...electronClientOptions,
-  signInURL: `${authWebUrl}/sign-in?mode=sign-up&flow=manual-code`,
-})
-
-// Electron 44 的 RequestInit 允许 duplex: "full"；Better Fetch 的
-// 公开类型目前只允许 "half"。实际运行协议兼容，
-// 因此在上游声明不一致的边界保留插件的具体动作类型，
-// 避免把不匹配扩散到调用方。
-const compatibleElectronClient =
-  configuredElectronClient as unknown as BetterAuthClientPlugin &
-    typeof configuredElectronClient
-const compatibleRegistrationClient =
-  configuredRegistrationClient as unknown as BetterAuthClientPlugin &
-    typeof configuredRegistrationClient
-const compatibleManualCodeClient =
-  configuredManualCodeClient as unknown as BetterAuthClientPlugin &
-    typeof configuredManualCodeClient
-const compatibleManualRegistrationClient =
-  configuredManualRegistrationClient as unknown as BetterAuthClientPlugin &
-    typeof configuredManualRegistrationClient
-
-export const authClient = createAuthClient({
-  baseURL: apiServerUrl,
-  plugins: [compatibleElectronClient],
-  fetchOptions: {
-    onSuccess(context) {
-      // 授权交接的成功入口涵盖手动授权码与深链；仅发布白名单资料。
-      if (
-        new URL(context.request.url).pathname.endsWith('/electron/token') &&
-        isRecord(context.data) &&
-        isRecord(context.data.user)
-      ) {
-        const user = toAuthUser(context.data.user)
-        if (user.id)
-          authenticationListeners.forEach((listener) => listener(user))
-      }
+function createDesktopAuthClient(signInURL: string) {
+  const configuredClient = electronClient({
+    ...electronClientOptions,
+    signInURL,
+  })
+  // Electron 的 RequestInit 与 Better Fetch 的 duplex 声明暂不一致；
+  // 类型适配只留在这一处，具体动作仍使用库的公开类型。
+  const plugin = configuredClient as unknown as BetterAuthClientPlugin &
+    typeof configuredClient
+  return createAuthClient({
+    baseURL: apiServerUrl,
+    plugins: [plugin],
+    fetchOptions: {
+      onSuccess(context) {
+        if (
+          new URL(context.request.url).pathname.endsWith('/electron/token') &&
+          isRecord(context.data) &&
+          isRecord(context.data.user)
+        ) {
+          const user = toAuthUser(context.data.user)
+          if (user.id)
+            authenticationListeners.forEach((listener) => listener(user))
+        }
+      },
     },
-  },
-})
+  })
+}
 
-const registrationAuthClient = createAuthClient({
-  baseURL: apiServerUrl,
-  plugins: [compatibleRegistrationClient],
-})
-const manualCodeAuthClient = createAuthClient({
-  baseURL: apiServerUrl,
-  plugins: [compatibleManualCodeClient],
-})
-const manualRegistrationAuthClient = createAuthClient({
-  baseURL: apiServerUrl,
-  plugins: [compatibleManualRegistrationClient],
-})
+export const authClient = createDesktopAuthClient(
+  electronClientOptions.signInURL,
+)
+const registrationAuthClient = createDesktopAuthClient(
+  `${authWebUrl}/sign-in?mode=sign-up`,
+)
+const manualCodeAuthClient = createDesktopAuthClient(
+  `${authWebUrl}/sign-in?flow=manual-code`,
+)
+const manualRegistrationAuthClient = createDesktopAuthClient(
+  `${authWebUrl}/sign-in?mode=sign-up&flow=manual-code`,
+)
 
 export async function requestDesktopAuthentication(
   intent: AuthIntent,

@@ -124,7 +124,9 @@ export function createSessionList(api: SessionApi) {
     },
     selectAccount,
     deactivate,
-    reload,
+    reload() {
+      return snapshot.pending ? Promise.resolve() : reload()
+    },
     revoke,
   }
 }
