@@ -1,6 +1,7 @@
 import { chatLimits } from '@velin/contracts/policy'
 import { ArrowUp, Plus, Square } from 'lucide-react'
 import { useRef, useState } from 'react'
+import { chatKeyAction } from './keyboard-policy'
 import type { FormEvent, KeyboardEvent } from 'react'
 
 type ComposerProps = {
@@ -44,17 +45,17 @@ function Composer({ isStreaming, sendOnEnter, onSend, onStop }: ComposerProps) {
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.nativeEvent.isComposing || isComposingRef.current) {
-      return
-    }
-
-    const shouldSend = sendOnEnter
-      ? event.key === 'Enter' && !event.shiftKey
-      : event.key === 'Enter' && (event.metaKey || event.ctrlKey)
-
-    if (!shouldSend) {
-      return
-    }
+    const action = chatKeyAction(
+      {
+        key: event.key,
+        isComposing: event.nativeEvent.isComposing || isComposingRef.current,
+        shiftKey: event.shiftKey,
+        metaKey: event.metaKey,
+        ctrlKey: event.ctrlKey,
+      },
+      sendOnEnter,
+    )
+    if (action !== 'submit') return
 
     event.preventDefault()
     submit()

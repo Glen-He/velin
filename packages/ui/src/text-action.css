@@ -1,0 +1,62 @@
+/* 纯文字动作默认无实体底色，悬停、按下与键盘焦点提供明确反馈。 */
+.text-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--control-button-compact);
+  padding: var(--space-3) var(--space-4);
+  border: 0;
+  border-radius: var(--surface-radius-control);
+  corner-shape: var(--surface-corner-shape);
+  background: transparent;
+  color: var(--color-blue-text);
+  font: inherit;
+  font-size: var(--type-control);
+  line-height: var(--line-height-tight);
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background-color var(--motion-duration-feedback) var(--motion-ease-feedback),
+    color var(--motion-duration-feedback) var(--motion-ease-feedback);
+}
+.text-action[data-tone='neutral'] {
+  color: var(--color-secondary);
+}
+@media (hover: hover) {
+  .text-action:hover:not(:disabled) {
+    background: var(--color-blue-soft);
+  }
+  .text-action[data-tone='neutral']:hover:not(:disabled) {
+    background: var(--color-control-hover);
+    color: var(--color-ink);
+  }
+}
+.text-action:active:not(:disabled) {
+  background: var(--color-control-hover);
+}
+.text-action:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.text-action:disabled {
+  color: var(--color-secondary);
+  background: transparent;
+  cursor: default;
+  opacity: 0.65;
+}
+.text-action svg {
+  flex: none;
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+}
+@media (pointer: coarse) {
+  .text-action {
+    min-height: var(--control-touch-target);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .text-action {
+    transition: none;
+  }
+}

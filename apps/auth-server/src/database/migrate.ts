@@ -5,7 +5,7 @@ import { config } from '../config.js'
 const direction = process.argv[2]
 
 if (direction !== 'up' && direction !== 'down') {
-  throw new Error('迁移方向必须是 up 或 down。')
+  throw new Error('Migration direction must be up or down.')
 }
 
 await runner({

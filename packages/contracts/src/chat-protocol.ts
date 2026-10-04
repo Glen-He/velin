@@ -1,3 +1,6 @@
+import type { z } from 'zod'
+import type { chatEventSchema } from './chat-validation.js'
+
 export const chatIpcChannels = {
   send: 'velin:chat:send',
   event: 'velin:chat:event',
@@ -19,30 +22,4 @@ export type StopMessageRequest = {
   conversationId: string
 }
 
-type ChatEventBase = {
-  requestId: string
-  conversationId: string
-}
-
-export type ChatEvent =
-  | (ChatEventBase & {
-      type: 'message-start'
-      messageId: string
-    })
-  | (ChatEventBase & {
-      type: 'text-delta'
-      messageId: string
-      delta: string
-    })
-  | (ChatEventBase & {
-      type: 'message-complete'
-      messageId: string
-    })
-  | (ChatEventBase & {
-      type: 'message-stopped'
-    })
-  | (ChatEventBase & {
-      type: 'error'
-      messageId?: string
-      message: string
-    })
+export type ChatEvent = z.infer<typeof chatEventSchema>

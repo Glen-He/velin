@@ -115,7 +115,7 @@ test(
         401,
       )
 
-      // Production requires SMTP; an unavailable transport must never report delivery.
+      // 生产必须使用 SMTP；传输不可用时不能报告投递成功。
       for (let attempt = 0; attempt < 3; attempt++) {
         const failed = await post(
           '/api/security/step-up/email-code',

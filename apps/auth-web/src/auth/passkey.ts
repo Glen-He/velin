@@ -5,8 +5,8 @@ const promptTimeoutMs = 60_000
 
 let pendingController: AbortController | null = null
 
-// Starting another credential action cancels conditional autofill first. Remove
-// listeners and timers on every exit so an old timeout cannot cancel a new flow.
+// 开始其他凭据操作前取消条件自动填充；
+// 每条退出路径都清理监听与计时器，避免旧超时取消新流程。
 async function withCredential<T>(
   parent: AbortSignal | undefined,
   run: (signal: AbortSignal) => Promise<T>,

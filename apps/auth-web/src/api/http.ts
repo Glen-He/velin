@@ -1,4 +1,4 @@
-import { errorMessage } from '../shared'
+import { errorMessage } from '@velin/contracts/error-copy'
 import { isRecord } from '@velin/contracts/value'
 
 export class ApiError extends Error {
@@ -50,11 +50,7 @@ export async function requestJson<T>(
 }
 
 export function actionErrorMessage(cause: unknown): string {
-  return errorMessage(
-    isRecord(cause) && typeof cause.message === 'string'
-      ? { message: cause.message }
-      : null,
-  )
+  return errorMessage(cause)
 }
 
 export function isStepUpRequired(cause: unknown): boolean {

@@ -1,3 +1,6 @@
+import { createAuthStateSync } from './auth/auth-state-sync'
+import { isValidDisplayName } from '@velin/contracts/policy'
+import { errorMessage } from '@velin/contracts/error-copy'
 import { chatRequestSchema } from '@velin/contracts/chat-validation'
 import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from 'electron'
 import type {
@@ -25,6 +28,7 @@ import {
   getAuthenticatedUser,
   getInitialAuthenticatedUser,
   requestDesktopAuthentication,
+  subscribeAuthenticatedUser,
   signOutAuthenticatedUser,
   updateDisplayName,
   listAuthenticatedSessions,
@@ -36,7 +40,6 @@ import {
   authIpcChannels,
   type AuthFlow,
   type AuthIntent,
-  type AuthState,
 } from '@velin/contracts/auth-protocol'
 
 const currentDirectory = dirname(fileURLToPath(import.meta.url))
@@ -74,19 +77,14 @@ function emitAppMenuAction(action: AppMenuAction) {
   }
 }
 
-function emitAuthState(state: AuthState) {
+const authStateSync = createAuthStateSync(getAuthenticatedUser, (state) => {
   if (mainWindow && !mainWindow.webContents.isDestroyed()) {
     mainWindow.webContents.send(authIpcChannels.stateChanged, state)
   }
-}
-
-async function refreshAuthState() {
-  try {
-    emitAuthState({ user: await getAuthenticatedUser() })
-  } catch {
-    // Keep the last known local state during transient network failures.
-  }
-}
+})
+const emitAuthState = authStateSync.emit
+const refreshAuthState = authStateSync.refresh
+subscribeAuthenticatedUser((user) => emitAuthState({ user }))
 
 function registerAuthIpcHandlers() {
   ipcMain.handle(authIpcChannels.getState, async (event) => ({
@@ -127,7 +125,7 @@ function registerAuthIpcHandlers() {
     const result = await authClient.authenticate({ token: code })
 
     if (result.error) {
-      throw new Error(result.error.message ?? '授权码验证失败。')
+      throw new Error(errorMessage(result.error, '授权码验证失败。'))
     }
   })
 
@@ -156,7 +154,7 @@ function registerAuthIpcHandlers() {
 
     const name = payload.trim()
 
-    if (name.length < 1 || name.length > 32) {
+    if (!isValidDisplayName(name)) {
       throw new Error('用户名需为 1–32 个可见字符。')
     }
 
@@ -538,6 +536,9 @@ registerAuthIpcHandlers()
 authClient.setupMain({
   getWindow: () => mainWindow,
   bridges: false,
+  // 显式配置各能力；传入配置对象后，库不会自动启用省略的 scheme/csp。
+  scheme: app.isPackaged,
+  csp: false,
 })
 
 void app.whenReady().then(() => {

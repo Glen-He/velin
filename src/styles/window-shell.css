@@ -90,6 +90,7 @@
   height: var(--control-icon-compact);
   place-items: center;
   border-radius: var(--corner-icon-button);
+  corner-shape: var(--surface-corner-shape);
   background: transparent;
   color: var(--muted-text);
   cursor: pointer;
@@ -221,6 +222,7 @@
   height: var(--sidebar-control-height);
   padding: 0 var(--sidebar-item-inline-padding);
   border-radius: var(--corner-sidebar-control);
+  corner-shape: var(--surface-corner-shape);
   background: transparent;
   color: var(--text);
   cursor: pointer;

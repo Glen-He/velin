@@ -1,5 +1,5 @@
-// This process-local marker is never returned to a client. Internal credential
-// validation is already guarded by account-scoped limits at the outer route.
+// 进程内标记从不返回客户端；内部凭据验证
+// 已由外层路由按账号限制尝试次数。
 const marker = crypto.randomUUID()
 const header = 'x-velin-internal-verification'
 export function markInternalVerification(headers: Headers) {

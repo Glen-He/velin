@@ -5,22 +5,22 @@
   --border: var(--color-border-subtle);
   --text: var(--color-ink);
   --muted-text: var(--color-secondary);
-  --subtle-text: var(--color-icon-muted);
+  --subtle-text: var(--color-secondary);
   --accent: var(--color-primary);
   --accent-contrast: var(--color-on-primary);
   position: relative;
-  min-height: 100vh;
+  height: 100dvh;
   display: grid;
   place-items: center;
   padding: calc(var(--titlebar-height) + var(--space-9)) var(--space-11)
     var(--space-15);
-  overflow: hidden;
+  overflow: auto;
   background: var(--background);
   color: var(--text);
 }
 
 .desktop-auth-shell {
-  width: min(100%, 356px);
+  width: min(100%, var(--layout-auth-max-width));
   min-height: 386px;
   display: flex;
   flex-direction: column;
@@ -76,7 +76,7 @@
   padding-inline: var(--space-2);
   text-align: left;
   transition:
-    opacity var(--motion-duration-content) var(--motion-ease-standard),
+    opacity var(--motion-duration-step) var(--motion-ease-standard),
     transform var(--motion-duration-step) var(--motion-ease-standard);
 }
 
@@ -87,12 +87,12 @@
 
 .desktop-auth-step:last-child {
   opacity: 0;
-  transform: translateX(12px);
+  transform: translateX(var(--motion-step-distance));
 }
 
 .desktop-auth-flow-track.is-code .desktop-auth-step:first-child {
   opacity: 0;
-  transform: translateX(-12px);
+  transform: translateX(calc(-1 * var(--motion-step-distance)));
 }
 
 .desktop-auth-flow-track.is-code .desktop-auth-step:last-child {
@@ -123,28 +123,6 @@
   color: var(--danger);
 }
 
-.desktop-auth-button {
-  width: 100%;
-  height: var(--control-submit-height);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 18px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-pill);
-  corner-shape: round;
-  appearance: none;
-  overflow: hidden;
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-  cursor: pointer;
-  font-size: var(--type-body);
-  font-weight: var(--weight-semibold);
-  transition:
-    background-color var(--motion-duration-feedback) ease,
-    opacity var(--motion-duration-feedback) ease;
-}
-
 .desktop-auth-main-button {
   position: relative;
   width: calc(100% - 8px);
@@ -170,87 +148,6 @@
   opacity: 0;
 }
 
-.desktop-auth-button:hover:not(:disabled) {
-  background: var(--color-ink-hover);
-}
-
-.desktop-auth-button:focus-visible {
-  outline: 0;
-  box-shadow: 0 0 0 2px var(--focus-ring);
-}
-
-.desktop-auth-secondary-button {
-  border-color: var(--border);
-  background: transparent;
-  color: var(--text);
-}
-
-.desktop-auth-secondary-button:hover:not(:disabled) {
-  background: var(--surface-muted);
-  opacity: 1;
-}
-
-.desktop-auth-button:disabled,
-.desktop-auth-code-link:disabled {
-  cursor: default;
-  opacity: 0.55;
-}
-
-.desktop-auth-code-link {
-  align-self: center;
-  margin-top: var(--space-10);
-  padding: var(--space-2) var(--space-4);
-  background: transparent;
-  color: var(--text);
-  cursor: pointer;
-  font-size: var(--type-control);
-  font-weight: var(--weight-medium);
-  line-height: 1;
-  transition:
-    color var(--motion-duration-feedback) ease,
-    opacity var(--motion-duration-feedback) ease;
-}
-
-.desktop-auth-code-link:hover:not(:disabled) {
-  color: var(--muted-text);
-}
-
-/* 返回是层级导航，不是动作：默认不画背景，图标后直接跟上层页面名，
-   与网页端 .security-back-button 同一套语义。 */
-.desktop-auth-back-button {
-  display: inline-flex;
-  align-items: center;
-  /* 尖括号自带左右留白，再加 gap 就会散开。 */
-  gap: 0;
-  height: var(--control-icon-default);
-  margin-top: var(--space-4);
-  padding: 0 var(--space-5);
-  background: transparent;
-  color: var(--muted-text);
-  cursor: pointer;
-  font-size: var(--type-control);
-  font-weight: var(--weight-medium);
-  line-height: 1;
-  transition:
-    color var(--motion-duration-feedback) ease,
-    opacity var(--motion-duration-feedback) ease;
-}
-
-.desktop-auth-back-button:hover {
-  color: var(--text);
-}
-
-.desktop-auth-back-button svg {
-  flex: none;
-  width: var(--icon-sm);
-  height: var(--icon-sm);
-}
-
-.desktop-auth-back-button:disabled {
-  cursor: default;
-  opacity: 0.55;
-}
-
 .desktop-auth-code-form {
   width: 100%;
   display: grid;
@@ -262,7 +159,8 @@
   position: relative;
   height: var(--control-field-height);
   border: 1px solid var(--border);
-  border-radius: var(--radius-menu);
+  border-radius: var(--radius-field);
+  corner-shape: var(--surface-corner-shape);
   background: var(--surface);
 }
 
@@ -282,10 +180,6 @@
 }
 
 .desktop-auth-code-form input::placeholder {
-  color: transparent;
-}
-
-.desktop-auth-code-form input:focus::placeholder {
   color: var(--muted-text);
 }
 
@@ -306,43 +200,6 @@
   height: var(--icon-md);
 }
 
-.desktop-auth-code-form label {
-  position: absolute;
-  top: 50%;
-  left: 44px;
-  max-width: calc(100% - 92px);
-  padding-inline: 5px;
-  overflow: hidden;
-  transform: translateY(-50%);
-  color: var(--muted-text);
-  font-size: var(--type-input);
-  line-height: 1;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  pointer-events: none;
-  transition:
-    top var(--motion-duration-content) var(--motion-ease-standard),
-    left var(--motion-duration-content) var(--motion-ease-standard),
-    font-size var(--motion-duration-content) var(--motion-ease-standard);
-}
-
-.desktop-auth-code-form
-  input:is(:focus, :not(:placeholder-shown), :autofill, :-webkit-autofill)
-  + label {
-  top: 0;
-  left: 12px;
-  background: linear-gradient(
-    to bottom,
-    var(--background) 0 50%,
-    var(--surface) 50% 100%
-  );
-  font-size: var(--type-micro);
-}
-
-.desktop-auth-code-form input:focus + label {
-  color: var(--text);
-}
-
 .desktop-auth-code-form button {
   position: absolute;
   top: 3px;
@@ -353,6 +210,7 @@
   place-items: center;
   padding: 0;
   border-radius: var(--radius-menu-item);
+  corner-shape: var(--surface-corner-shape);
   background: var(--accent);
   color: var(--accent-contrast);
   cursor: pointer;
@@ -378,12 +236,21 @@
   line-height: 1.35;
 }
 
-.desktop-auth-button svg,
 .desktop-auth-spinner {
-  width: 17px;
-  height: 17px;
+  width: var(--icon-md);
+  height: var(--icon-md);
+  animation: auth-spinner 800ms linear infinite;
 }
 
-.desktop-auth-spinner {
-  animation: auth-spinner 800ms linear infinite;
+.desktop-auth-code-link {
+  align-self: center;
+  margin-top: var(--space-10);
+}
+.desktop-auth-back-button {
+  margin-top: var(--space-10);
+}
+.desktop-auth-code-form button:disabled {
+  background: var(--color-control);
+  color: var(--color-secondary);
+  opacity: 0.65;
 }

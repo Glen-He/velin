@@ -7,6 +7,7 @@ import { emailOTP, haveIBeenPwned, twoFactor } from 'better-auth/plugins'
 import { config } from './config.js'
 import { databasePool } from './database.js'
 import { rememberDevCode, sendAuthenticationEmail } from './email.js'
+import { logger } from './logging.js'
 import {
   isValidDisplayName,
   isValidNewPassword,
@@ -16,11 +17,7 @@ import {
   operationRequirements,
 } from './security/operation-policy.js'
 import { operationGrants } from './security/grants.js'
-import {
-  recordLoginMethod,
-  resetUserGrants,
-  type AuthMethod,
-} from './security/session-audit.js'
+import { recordLoginMethod, type AuthMethod } from './security/session-audit.js'
 import {
   operationGrantHeader,
   operationGrantSchema,
@@ -38,7 +35,7 @@ const loginMethodByPath: Record<string, AuthMethod> = {
   '/two-factor/verify-totp': 'totp',
 }
 
-// 凭据变更后需要作废既有会话的认证强度。
+// 凭据变更后作废该用户尚未消费的操作授权。
 const credentialResetPaths = new Set([
   '/change-password',
   '/change-email',
@@ -72,6 +69,14 @@ function validateNewPassword(password: unknown) {
 }
 
 export const auth = betterAuth({
+  logger: {
+    log(level, _message, ...details: unknown[]) {
+      // 库可能把用户文案和完整请求放在参数里，只记录稳定事件与错误摘要。
+      logger.write(level, 'auth.library_event', {
+        error: details.find((value) => value instanceof Error),
+      })
+    },
+  },
   appName: 'Velin',
   baseURL: config.authBaseUrl,
   secret: config.authSecret,
@@ -130,7 +135,7 @@ export const auth = betterAuth({
       }
 
       if (context.path === '/sign-up/email' && isRecord(context.body)) {
-        // Better Auth's email endpoint requires a name. Only the server assigns it.
+        // Better Auth 邮箱入口要求 name，最终名称仅由服务端赋值。
         return {
           context: {
             ...context,
@@ -181,11 +186,11 @@ export const auth = betterAuth({
         return
       }
 
-      // Mutation endpoints may rotate and delete the request's original session.
-      // Read identity from middleware context, not from the now-obsolete Cookie.
+      // 写入端点可能轮换并删除请求原会话。
+      // 从中间件上下文读取身份，不能再次依赖已经失效的 Cookie。
       const userId =
         context.context.newSession?.user.id ?? context.context.session?.user.id
-      if (userId) await resetUserGrants(userId)
+      if (userId) await operationGrants.revokeUser(userId)
     }),
   },
   databaseHooks: {
@@ -203,7 +208,7 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     minPasswordLength: passwordPolicy.minimum,
-    // Preserve existing credentials at sign-in; shared policy validates new values.
+    // 登录兼容已有凭据，新密码由共享策略验证。
     maxPasswordLength: 256,
     requireEmailVerification: true,
     revokeSessionsOnPasswordReset: true,
@@ -214,19 +219,12 @@ export const auth = betterAuth({
     updateAge: 60 * 60 * 24,
     // 0 关闭 better-auth 的新鲜度闸门：它比较的是 session.createdAt 到现在的
     // 整段会话年龄，而不是“上次强验证时间”，会话有效期 30 天会让任何低于会话
-    // 年龄的取值都在十几分钟后锁死通行密钥注册和资料修改。等级判定由下面的
-    // operation grant 自建模型负责。
+    // 年龄的取值会随会话变旧而锁死写入。敏感操作由独立、逐次消费的
+    // operation grant 保护，不能依赖会话年龄代替授权。
     freshAge: 0,
-    // Login method is audit metadata. Legacy fields remain for migration compatibility.
+    // 登录方式仅作为审计元数据，授权不存储在会话上。
     additionalFields: {
       amr: { type: 'string', required: false, input: false },
-      verifiedAt: { type: 'date', required: false, input: false },
-      stepUpLevel: {
-        type: 'number',
-        required: false,
-        defaultValue: 1,
-        input: false,
-      },
     },
   },
   account: {
@@ -300,8 +298,8 @@ export const auth = betterAuth({
         enabled: true,
         // 关闭上游的"当前邮箱回码"这一步：它的验证码和卡片的强验证是同一封
         // 邮件，由 verify-email 原子消费；操作另需一次性授权。
-        // 当前邮箱的控制权由 2 级升级验证证明（邮箱验证码通道本身就是发给当前
-        // 邮箱的码，通行密钥/动态码则更强），/email-otp/change-email 已在等级表里拦。
+        // 当前邮箱验证码或已配置的其他方法提供操作要求的证据，
+        // /email-otp/change-email 在最终写入前原子消费本次授权。
         verifyCurrentEmail: false,
       },
       overrideDefaultEmailVerification: true,
@@ -317,6 +315,7 @@ export const auth = betterAuth({
         try {
           await sendAuthenticationEmail({
             to: email,
+            purpose: type,
             subject: `${otp} 是你的 Velin ${purpose}验证码`,
             text: `你的 Velin ${purpose}验证码是：${otp}\n\n验证码将在 5 分钟后失效。如果不是你本人操作，请忽略这封邮件。`,
           })

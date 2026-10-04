@@ -44,7 +44,7 @@ function readStoredSidebarWidth(key: string) {
       }
     }
   } catch {
-    // Preferences remain usable for this session if storage is unavailable.
+    // 存储不可用时，当前会话仍可使用偏好设置。
   }
 
   return defaultSidebarWidth
@@ -104,7 +104,7 @@ export function useSidebar() {
         }
       })
       .catch(() => {
-        // Main/preload can briefly be unavailable while Electron restarts in development.
+        // 开发时 Electron 重启可能使 Main/preload 短暂不可用。
       })
 
     return () => {

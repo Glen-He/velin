@@ -1,3 +1,4 @@
+import { TruncatedText } from '@velin/ui/TruncatedText.tsx'
 import {
   DndContext,
   DragOverlay,
@@ -139,7 +140,9 @@ function SortableConversationItem({
         onContextMenu={(event) => onContextMenu(event, conversation.id)}
         onClick={() => onSelect(conversation.id)}
       >
-        <span className="conversation-title">{conversation.title}</span>
+        <TruncatedText className="conversation-title">
+          {conversation.title}
+        </TruncatedText>
       </button>
     </div>
   )
@@ -318,9 +321,9 @@ function ConversationSidebar({
         >
           {isActive && activeDragConversation ? (
             <div className="conversation-drag-preview" aria-hidden="true">
-              <span className="conversation-title">
+              <TruncatedText className="conversation-title">
                 {activeDragConversation.title}
-              </span>
+              </TruncatedText>
             </div>
           ) : null}
         </DragOverlay>
@@ -338,9 +341,9 @@ function ConversationSidebar({
           onClick={toggleAccountMenu}
         >
           <UserAvatar user={authUser} />
-          <span className="account-name">
+          <TruncatedText className="account-name">
             {authUser ? authUser.name.trim() || authUser.email : '登录'}
-          </span>
+          </TruncatedText>
         </button>
       </div>
 
@@ -400,6 +403,7 @@ function ConversationSidebar({
                   role="menuitem"
                   onClick={() => {
                     setAccountMenu(null)
+                    accountButtonRef.current?.focus({ preventScroll: true })
                     onSignOut()
                   }}
                 >

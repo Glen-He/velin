@@ -11,34 +11,43 @@ export type SecurityStage =
   | 'totpVerify'
   | 'backupCodes'
   | 'running'
-export type SecurityHistory = readonly [SecurityStage, ...SecurityStage[]]
+export type SecurityHistory = {
+  stages: readonly [SecurityStage, ...SecurityStage[]]
+  direction: 'forward' | 'backward'
+}
 type HistoryAction =
   | { type: 'advance'; stage: SecurityStage }
   | { type: 'back' }
   | { type: 'password-route' }
-
 export function initialSecurityHistory(
   operation: DialogOperation,
 ): SecurityHistory {
-  return [operation === 'changePassword' ? 'password' : 'verify']
+  return {
+    stages: [operation === 'changePassword' ? 'password' : 'verify'],
+    direction: 'forward',
+  }
 }
+// 方向与真实历史在同一次转换中更新，不能让动画与返回路径脱节。
 export function securityHistoryReducer(
   history: SecurityHistory,
   action: HistoryAction,
 ): SecurityHistory {
+  const { stages } = history
   if (action.type === 'advance')
-    return history.at(-1) === action.stage
+    return stages.at(-1) === action.stage
       ? history
-      : [...history, action.stage]
+      : { stages: [...stages, action.stage], direction: 'forward' }
   if (action.type === 'password-route')
-    return history[0] === 'password' ? ['password'] : history
+    return stages[0] === 'password' && stages.length > 1
+      ? { stages: ['password'], direction: 'backward' }
+      : history
   if (
-    history.length === 1 ||
-    history.at(-1) === 'running' ||
-    history.at(-1) === 'backupCodes'
+    stages.length === 1 ||
+    stages.at(-1) === 'running' ||
+    stages.at(-1) === 'backupCodes'
   )
     return history
-  return [history[0], ...history.slice(1, -1)]
+  return { stages: [stages[0], ...stages.slice(1, -1)], direction: 'backward' }
 }
 
 export function usableChannels(

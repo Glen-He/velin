@@ -7,8 +7,8 @@ const rules = {
   'passkey-options': { max: 5, windowMs: 60_000 },
 } as const
 
-// A single atomic upsert counts attempts across tabs, sessions and processes.
-// Reuse the authentication library's database counter storage, with our namespace.
+// 一次原子 upsert 在标签页、会话与进程之间累计尝试。
+// 复用认证库的数据库计数器存储，以独立命名空间隔离。
 export function createVerificationLimiter(database: Pick<Pool, 'query'>) {
   return {
     async attempt(userId: string, scope: Scope) {

@@ -13,7 +13,7 @@ export function GeneralSettings({
   return (
     <SettingsPanel title="通用">
       <SettingsGroup title="侧边栏">
-        <div className="settings-card">
+        <div className="panel-card">
           <SettingsRow
             title="边缘唤出侧边栏"
             description="侧边栏隐藏时，将指针移到窗口最左侧临时显示。"
@@ -37,7 +37,7 @@ export function ChatSettings({
   return (
     <SettingsPanel title="对话">
       <SettingsGroup title="输入">
-        <div className="settings-card">
+        <div className="panel-card">
           <SettingsRow
             title="Enter 发送消息"
             description={
@@ -62,7 +62,7 @@ export function AboutSettings() {
   return (
     <SettingsPanel title="关于">
       <SettingsGroup title="版本信息">
-        <div className="settings-card">
+        <div className="panel-card">
           <SettingsRow title="Velin" description="版本 0.1.0" />
         </div>
       </SettingsGroup>

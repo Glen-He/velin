@@ -3,18 +3,20 @@ import type { KeyboardEvent, ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import './modal.css'
 
-// Native modality supplies inert background, keyboard containment and Escape.
-// Focus enters the dialog itself, leaving form fields quiet until user input.
+// 原生模态提供背景 inert、键盘约束与 Escape 关闭。
+// 焦点进入对话框容器，用户操作前不抢输入框焦点。
 export function Modal({
   label,
   onClose,
   children,
   focusKey,
+  describedBy,
 }: {
   label: string
   onClose: () => void
   children: ReactNode
   focusKey?: string
+  describedBy?: string
 }) {
   const ref = useRef<HTMLDialogElement>(null)
   useLayoutEffect(() => {
@@ -34,6 +36,17 @@ export function Modal({
   useLayoutEffect(() => {
     ref.current?.focus({ preventScroll: true })
   }, [focusKey])
+  useLayoutEffect(() => {
+    const dialog = ref.current
+    // 提交后禁用当前控件可能使焦点落到 body；仅恢复最上层模态的焦点。
+    if (
+      dialog?.open &&
+      document.activeElement === document.body &&
+      [...document.querySelectorAll('dialog[open]')].at(-1) === dialog
+    ) {
+      dialog.focus({ preventScroll: true })
+    }
+  })
   function containTab(event: KeyboardEvent<HTMLDialogElement>) {
     if (event.key !== 'Tab') return
     const dialog = event.currentTarget
@@ -51,8 +64,8 @@ export function Modal({
     )
     const first = controls[0]
     const last = controls.at(-1)
-    // Chromium briefly focuses body at the native dialog's Tab boundary.
-    // Cycle the edges explicitly so the keyboard stays on a visible control.
+    // Chromium 在原生对话框的 Tab 边界可能短暂聚焦 body。
+    // 显式循环边缘焦点，保证键盘始终停留在可见控件上。
     if (
       !first ||
       document.activeElement === dialog ||
@@ -60,7 +73,7 @@ export function Modal({
       (!event.shiftKey && document.activeElement === last)
     ) {
       event.preventDefault()
-      ;(event.shiftKey ? last : first)?.focus({ preventScroll: true })
+      ;(event.shiftKey ? last : first)?.focus()
     }
   }
   return createPortal(
@@ -68,6 +81,7 @@ export function Modal({
       ref={ref}
       className="velin-modal-root"
       aria-label={label}
+      aria-describedby={describedBy}
       tabIndex={-1}
       onKeyDown={containTab}
       onCancel={(event) => {

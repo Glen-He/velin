@@ -3,8 +3,8 @@ import { isRecord } from '@velin/contracts/value'
 
 export const clientAddressHeader = 'x-velin-client-address'
 
-// Only the Node adapter's socket proves the immediate peer. Browser-supplied
-// address headers are discarded unless that peer is explicitly trusted.
+// 只有 Node adapter 的 socket 能证明直接连接方；
+// 除非该连接方被明确设为可信代理，否则丢弃浏览器传入的地址头。
 export function authRequestWithAddress(
   request: Request,
   bindings: unknown,

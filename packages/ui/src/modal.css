@@ -19,7 +19,7 @@
   background: transparent;
 }
 
-/* Content remains scrollable on short windows and when text is enlarged. */
+/* 短窗口或文字放大时，内容仍可正常滚动。 */
 .velin-modal-root > .web-modal-scrim,
 .velin-modal-root > .card-dialog-scrim {
   position: relative;

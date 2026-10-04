@@ -1,3 +1,4 @@
+import { Button } from '@velin/ui/Button.tsx'
 import { passwordPolicy, passwordPolicyMessage } from '@velin/contracts/policy'
 import {
   Check,
@@ -9,9 +10,9 @@ import {
   KeyRound,
   LockKeyhole,
 } from 'lucide-react'
-import { LoadingState, Spinner } from '../shared-ui'
+import { LoadingState, Spinner } from '../LoadingState'
 
-import { EmailField, FloatingAuthField } from './AuthFields'
+import { EmailField, AuthField } from './AuthFields'
 import { AuthorizationCodePage } from './AuthorizationCodePage'
 import { GoogleMark } from './GoogleMark'
 
@@ -80,16 +81,20 @@ export function SignInPage() {
           </div>
           <h1>继续登录 Velin</h1>
           <p>{session.user.email}</p>
-          <button
-            className="primary-button account-action-button"
+          <Button
+            variant="primary"
+            size="regular"
+            stretch
+            className="account-action-button"
             type="button"
             disabled={isSubmitting}
             onClick={() => void continueExistingSession()}
           >
             {isSubmitting ? <Spinner /> : '继续使用此账号'}
-          </button>
+          </Button>
           <button
-            className="text-button account-switch-button"
+            className="text-action account-switch-button"
+            data-tone="neutral"
             type="button"
             disabled={isSubmitting}
             onClick={() => void handleUseAnotherAccount()}
@@ -107,7 +112,7 @@ export function SignInPage() {
   }
 
   if (session && !isElectronFlow) {
-    return <LoadingState label="正在前往账号中心…" />
+    return <LoadingState label="正在前往账号…" />
   }
 
   return (
@@ -161,7 +166,7 @@ export function SignInPage() {
                   setEmail={setEmail}
                   withPasskey={mode === 'password'}
                 />
-                <FloatingAuthField
+                <AuthField
                   id="auth-password"
                   label={mode === 'sign-up' ? '设置密码' : '密码'}
                   icon={LockKeyhole}
@@ -209,14 +214,14 @@ export function SignInPage() {
                   ) : (
                     <div className="auth-form-support">
                       <button
-                        className="text-button"
+                        className="text-action"
                         type="button"
                         onClick={() => selectMode('email-otp')}
                       >
                         使用邮箱验证码
                       </button>
                       <button
-                        className="text-button"
+                        className="text-action"
                         type="button"
                         onClick={() => selectMode('reset-request')}
                       >
@@ -225,8 +230,11 @@ export function SignInPage() {
                     </div>
                   )}
                 </div>
-                <button
-                  className="primary-button"
+                <Button
+                  variant="primary"
+                  size="regular"
+                  stretch
+                  type="submit"
                   disabled={isSubmitting || !stepReady()}
                 >
                   {isSubmitting ? (
@@ -236,7 +244,7 @@ export function SignInPage() {
                   ) : (
                     '登录'
                   )}
-                </button>
+                </Button>
               </form>
             )}
 
@@ -249,7 +257,8 @@ export function SignInPage() {
                 <EmailField email={email} setEmail={setEmail} withPasskey />
                 <div className="auth-field-slot">
                   {isEmailOtpSent && (
-                    <FloatingAuthField
+                    <AuthField
+                      code
                       id="auth-email-otp"
                       label="验证码"
                       icon={Hash}
@@ -266,15 +275,18 @@ export function SignInPage() {
                 </div>
                 <div className="auth-mode-slot">
                   <button
-                    className="text-button"
+                    className="text-action"
                     type="button"
                     onClick={() => selectMode('password')}
                   >
                     使用密码登录
                   </button>
                 </div>
-                <button
-                  className="primary-button"
+                <Button
+                  variant="primary"
+                  size="regular"
+                  stretch
+                  type="submit"
                   disabled={isSubmitting || !stepReady()}
                 >
                   {isSubmitting ? (
@@ -284,7 +296,7 @@ export function SignInPage() {
                   ) : (
                     '发送验证码'
                   )}
-                </button>
+                </Button>
               </form>
             )}
 
@@ -294,7 +306,8 @@ export function SignInPage() {
                 noValidate
                 onSubmit={submitEmailVerification}
               >
-                <FloatingAuthField
+                <AuthField
+                  code
                   id="auth-verification-code"
                   label="验证码"
                   icon={Hash}
@@ -308,12 +321,15 @@ export function SignInPage() {
                   }
                 />
                 <p className="auth-field-hint">发送至 {email}</p>
-                <button
-                  className="primary-button"
+                <Button
+                  variant="primary"
+                  size="regular"
+                  stretch
+                  type="submit"
                   disabled={isSubmitting || !stepReady()}
                 >
                   {isSubmitting ? <Spinner /> : '验证邮箱'}
-                </button>
+                </Button>
               </form>
             )}
 
@@ -322,7 +338,8 @@ export function SignInPage() {
                 <EmailField email={email} setEmail={setEmail} />
                 {mode === 'reset-confirm' && (
                   <>
-                    <FloatingAuthField
+                    <AuthField
+                      code
                       id="auth-reset-code"
                       label="验证码"
                       icon={Hash}
@@ -335,7 +352,8 @@ export function SignInPage() {
                         setOtp(event.target.value.replace(/\D/g, ''))
                       }
                     />
-                    <FloatingAuthField
+                    <AuthField
+                      floating={false}
                       id="auth-reset-password"
                       label="新密码"
                       icon={LockKeyhole}
@@ -354,8 +372,11 @@ export function SignInPage() {
                     />
                   </>
                 )}
-                <button
-                  className="primary-button"
+                <Button
+                  variant="primary"
+                  size="regular"
+                  stretch
+                  type="submit"
                   disabled={isSubmitting || !stepReady()}
                 >
                   {isSubmitting ? (
@@ -365,13 +386,14 @@ export function SignInPage() {
                   ) : (
                     '更新密码'
                   )}
-                </button>
+                </Button>
               </form>
             )}
 
             {mode === 'two-factor' && (
               <form className="auth-form" noValidate onSubmit={submitTwoFactor}>
-                <FloatingAuthField
+                <AuthField
+                  code
                   id="auth-two-factor-code"
                   label={useBackupCode ? '恢复码' : '动态验证码'}
                   icon={useBackupCode ? KeyRound : Hash}
@@ -389,14 +411,17 @@ export function SignInPage() {
                   />
                   <span>信任这台设备 30 天</span>
                 </label>
-                <button
-                  className="primary-button"
+                <Button
+                  variant="primary"
+                  size="regular"
+                  stretch
+                  type="submit"
                   disabled={isSubmitting || !stepReady()}
                 >
                   {isSubmitting ? <Spinner /> : '继续'}
-                </button>
+                </Button>
                 <button
-                  className="text-button"
+                  className="text-action"
                   type="button"
                   onClick={() => {
                     setOtp('')
@@ -448,7 +473,12 @@ export function SignInPage() {
             mode !== 'email-otp' &&
             mode !== 'sign-up' &&
             mode !== 'two-factor' ? (
-              <button type="button" onClick={() => selectMode('password')}>
+              <button
+                className="text-action"
+                data-tone="neutral"
+                type="button"
+                onClick={() => selectMode('password')}
+              >
                 <ChevronLeft aria-hidden="true" /> 返回登录
               </button>
             ) : null}

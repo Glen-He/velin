@@ -1,6 +1,6 @@
 :root {
   color-scheme: light;
-  /* Shared neutral and semantic colors; each surface may choose its own canvas. */
+  /* 共用中性色和语义色，各载体按职责选择画布。 */
   --color-canvas: #ffffff;
   --color-white: #ffffff;
   --color-black: #000000;
@@ -26,10 +26,13 @@
   --color-control: #f2f2f7;
   --color-control-hover: #e8e8ed;
   --color-blue: #007aff;
+  --color-accent-fill: #0066cc;
   --color-blue-text: #0866d8;
   --color-blue-soft: #eef6ff;
-  --color-danger: #ff3b30;
-  --color-danger-text: #ff3b30;
+  /* 常态使用 Apple HIG 默认系统红，两端共用；增强对比度时单独适配。 */
+  --color-danger: #ff383c;
+  --color-danger-text: var(--color-danger);
+  --color-danger-fill: var(--color-danger);
   --color-danger-soft: #fff0ee;
   --color-success: #248a3d;
   --color-success-text: #126c2e;
@@ -49,8 +52,8 @@
   --palette-dark-color-blue: #0a84ff;
   --palette-dark-color-blue-text: #82b8ff;
   --palette-dark-color-blue-soft: #172a42;
-  --palette-dark-color-danger: #ff453a;
-  --palette-dark-color-danger-text: #ff9f97;
+  --palette-dark-color-danger: #ff4245;
+  --palette-dark-color-danger-text: var(--palette-dark-color-danger);
   --palette-dark-color-danger-soft: #3c2525;
   --palette-dark-color-success: #7ee29a;
   --palette-dark-color-success-text: #7ee29a;
@@ -111,5 +114,20 @@
     --color-success-text: var(--palette-dark-color-success-text);
     --color-focus: var(--palette-dark-color-focus);
     --shadow-menu: var(--palette-dark-shadow-menu);
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --color-danger-text: #dc142b;
+    --color-danger-fill: #e9152d;
+  }
+  :root[data-theme='dark'] {
+    --color-danger-text: #ff6165;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      --color-danger-text: #ff6165;
+    }
   }
 }

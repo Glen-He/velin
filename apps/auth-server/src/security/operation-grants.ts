@@ -9,8 +9,8 @@ import {
 export type GrantIdentity = { userId: string; sessionId: string }
 export type GrantClaim = GrantIdentity & VerificationIntent & { id: string }
 
-// Atomic consumption prevents concurrent requests from sharing a confirmation.
-// An operation that fails after consumption needs a new confirmation.
+// 原子消费保证并发请求不能复用同一次确认。
+// 消费后操作失败，需要重新确认。
 export function createOperationGrants(database: Pick<Pool, 'query'>) {
   return {
     async issue(

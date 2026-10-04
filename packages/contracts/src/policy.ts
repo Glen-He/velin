@@ -28,6 +28,10 @@ export function isValidNewPassword(value: unknown): value is string {
   )
 }
 
+export function newPasswordError(value: string): string {
+  return isValidNewPassword(value) ? '' : passwordPolicyMessage
+}
+
 export function isValidDisplayName(value: unknown): value is string {
   return (
     typeof value === 'string' &&

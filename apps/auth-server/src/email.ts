@@ -1,15 +1,16 @@
 import nodemailer from 'nodemailer'
 import { config } from './config.js'
+import { logger } from './logging.js'
 
 type AuthenticationEmail = {
   to: string
   subject: string
   text: string
+  purpose: 'sign-in' | 'forget-password' | 'email-verification' | 'change-email'
 }
 
-// 本地开发没有真实邮件投递，验证码只打进终端。这里额外记住每个收件地址
-// 最近一次的明文码，让页面可以直接取用；生产环境两个函数都是空操作，
-// 且 config 已禁止 production 使用 console 传输。
+// 显式开发传输把最近验证码提供给本地页面；日志只记录投递事件。
+// 生产不保存开发回码，且 config 禁止 production 使用 console 传输。
 const devCodes = new Map<string, { otp: string; expiresAt: number }>()
 const devCodeTtlMs = 5 * 60 * 1000
 
@@ -59,9 +60,10 @@ const smtpTransport =
 
 export async function sendAuthenticationEmail(message: AuthenticationEmail) {
   if (!smtpTransport) {
-    console.info(
-      `[Velin 开发邮件] 收件人：${message.to}\n主题：${message.subject}\n${message.text}`,
-    )
+    logger.info('auth.email_preview', {
+      recipient: message.to,
+      purpose: message.purpose,
+    })
     return
   }
 

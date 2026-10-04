@@ -17,7 +17,7 @@ export async function reserveChatRequest(
 
   try {
     await client.query('begin')
-    // Serialize quota checks across server instances before inserting a request.
+    // 插入请求前，串行化跨服务实例的配额检查。
     await client.query('select pg_advisory_xact_lock(20260928, 1)')
     await client.query(
       `update chat_request_usage

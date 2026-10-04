@@ -16,6 +16,7 @@
   gap: 9px;
   padding: 0 var(--sidebar-item-inline-padding);
   border-radius: var(--corner-sidebar-control);
+  corner-shape: var(--surface-corner-shape);
   background: transparent;
   color: var(--text);
   cursor: pointer;
@@ -67,6 +68,7 @@
   gap: 9px;
   padding: 0 var(--sidebar-item-inline-padding);
   border-radius: var(--corner-sidebar-control);
+  corner-shape: var(--surface-corner-shape);
   background: color-mix(in srgb, var(--text) 6%, transparent);
   color: var(--muted-text);
   cursor: text;
@@ -126,6 +128,7 @@
   gap: 9px;
   padding: 0 var(--sidebar-item-inline-padding);
   border-radius: var(--corner-sidebar-control);
+  corner-shape: var(--surface-corner-shape);
   background: transparent;
   color: var(--text);
   cursor: pointer;
@@ -177,163 +180,22 @@
 }
 
 .settings-panel {
-  width: min(100%, 820px);
+  width: min(100%, var(--layout-settings-max-width));
+  container: settings-panel / inline-size;
   margin: 0 auto;
-  /* 内缩按主区域宽度取值，窗口和侧边栏宽度不直接参与。 */
-  padding: 34px clamp(var(--space-11), 6%, var(--space-17)) var(--space-17);
+}
+
+.settings-panel-content {
+  padding: 34px
+    clamp(var(--layout-page-gutter), 6cqi, var(--layout-settings-gutter))
+    var(--space-17);
 }
 
 .settings-panel h1 {
-  margin: 0 0 30px;
-  font-size: var(--type-section);
+  margin: 0 0 var(--space-11);
+  font-size: var(--type-page);
   font-weight: var(--weight-semibold);
   letter-spacing: -0.025em;
-}
-
-.settings-group + .settings-group {
-  margin-top: var(--space-11);
-}
-
-.settings-group > h2 {
-  margin: 0 0 9px var(--space-2);
-  color: var(--muted-text);
-  font-size: var(--type-control);
-  font-weight: var(--weight-semibold);
-  line-height: 1.2;
-}
-
-.settings-card {
-  overflow: hidden;
-  border: var(--hairline-width) solid
-    color-mix(in srgb, var(--border) 80%, transparent);
-  border-radius: var(--corner-settings-card);
-  background: var(--surface);
-}
-
-.settings-row {
-  display: flex;
-  min-height: 68px;
-  align-items: center;
-  gap: var(--space-10);
-  padding: var(--space-6) var(--space-7);
-}
-
-/* 行间分隔线从内容区起止（左右内缩一行水平 padding），不贯穿整卡。 */
-.settings-row + .settings-row {
-  position: relative;
-}
-
-.settings-row + .settings-row::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  inset-inline: 14px;
-  height: var(--hairline-width);
-  background: var(--border);
-}
-
-.settings-identity-row {
-  gap: var(--space-7);
-}
-
-.settings-avatar-button {
-  display: grid;
-  flex: none;
-  place-items: center;
-  padding: 0;
-  border: 0;
-  border-radius: var(--radius-circle);
-  background: transparent;
-  cursor: pointer;
-  transition: opacity var(--motion-duration-feedback) ease;
-}
-
-.settings-avatar-button:disabled {
-  cursor: default;
-  opacity: 0.6;
-}
-
-.settings-avatar {
-  position: relative;
-  width: 40px;
-  height: 40px;
-  flex: 0 0 40px;
-  font-size: var(--type-subtitle);
-}
-
-.settings-avatar-hint {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  border-radius: var(--radius-circle);
-  background: var(--color-avatar-overlay);
-  color: var(--color-on-accent);
-  opacity: 0;
-  transition: opacity var(--motion-duration-feedback) ease;
-}
-
-.settings-avatar-hint svg {
-  width: var(--icon-xs);
-  height: var(--icon-xs);
-}
-
-.settings-avatar-button:hover .settings-avatar-hint,
-.settings-avatar-button:focus-visible .settings-avatar-hint {
-  opacity: 1;
-}
-
-.settings-identity-copy {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.settings-identity-name {
-  overflow: hidden;
-  color: var(--text);
-  font-size: var(--type-body);
-  font-weight: var(--weight-semibold);
-  line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.settings-identity-email {
-  overflow: hidden;
-  color: var(--muted-text);
-  font-size: var(--type-caption);
-  line-height: 1.4;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.settings-icon-button {
-  display: grid;
-  width: var(--control-icon-compact);
-  height: var(--control-icon-compact);
-  place-items: center;
-  padding: 0;
-  border: 0;
-  border-radius: var(--corner-icon-button);
-  background: transparent;
-  color: var(--muted-text);
-  cursor: pointer;
-  transition:
-    background-color var(--motion-duration-feedback) ease,
-    color var(--motion-duration-feedback) ease;
-}
-
-.settings-icon-button svg {
-  width: var(--icon-xs);
-  height: var(--icon-xs);
-}
-
-.settings-icon-button:hover {
-  background: color-mix(in srgb, var(--text) 8%, transparent);
-  color: var(--text);
 }
 
 .card-dialog-scrim {
@@ -341,28 +203,28 @@
   inset: 0;
   z-index: 1100;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   place-items: center;
+  padding: var(--layout-modal-gutter);
   background: var(--color-scrim);
-  animation: card-dialog-scrim-in var(--motion-duration-content) ease;
+  animation: scrim-reveal var(--motion-duration-overlay)
+    var(--motion-ease-feedback);
 }
 
 .card-dialog {
-  width: var(--dialog-width-base);
-  max-width: calc(100vw - 48px);
+  width: min(100%, var(--dialog-width-edit));
+  min-width: 0;
   border-radius: var(--radius-card);
+  corner-shape: var(--surface-corner-shape);
   background: var(--surface);
   box-shadow: var(--shadow-dialog);
   padding: var(--space-9);
-  animation: card-dialog-pop var(--motion-duration-content)
+  animation: surface-reveal var(--motion-duration-overlay)
     var(--motion-ease-standard);
 }
 
-.card-dialog.is-large {
-  width: var(--dialog-width-large);
-}
-
-.card-dialog.is-extra {
-  width: var(--dialog-width-extra);
+.card-dialog.is-list {
+  width: min(100%, var(--dialog-width-list));
 }
 
 .card-dialog-title {
@@ -373,36 +235,17 @@
   line-height: 1.2;
 }
 
-.card-dialog-input {
-  width: 100%;
-  height: var(--control-field-height);
-  padding: 0 13px;
-  border: 1px solid var(--color-border-control);
-  border-radius: var(--radius-field);
-  outline: 0;
-  background: var(--color-canvas);
-  color: var(--text);
-  font-size: var(--type-input);
-  transition: border-color var(--motion-duration-feedback) ease;
-}
-
-.card-dialog-input:focus {
-  border-color: var(--color-blue);
-}
-
 .card-dialog-feedback {
   min-height: 15px;
   margin: var(--space-3) 0 0;
   color: var(--muted-text);
   font-size: var(--type-caption);
   line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
-.card-dialog-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--control-button-gap);
-  margin-top: var(--space-7);
+.card-dialog-feedback[role='alert'] {
+  color: var(--color-danger-text);
 }
 
 .card-dialog-text {
@@ -410,13 +253,6 @@
   color: var(--text);
   font-size: var(--type-body);
   line-height: 1.5;
-}
-
-.sessions-loading {
-  margin: var(--space-4) 0 0;
-  color: var(--muted-text);
-  font-size: var(--type-body);
-  line-height: 1.4;
 }
 
 .sessions-list {
@@ -430,12 +266,12 @@
   display: flex;
   align-items: center;
   gap: var(--space-8);
-  min-height: 56px;
-  padding: var(--space-5) 0;
+  min-height: var(--panel-row-height);
+  padding: var(--panel-row-padding) 0;
 }
 
 .session-row + .session-row {
-  border-top: var(--hairline-width) solid var(--border);
+  border-top: var(--line-width-divider) solid var(--color-border-subtle);
 }
 
 .session-copy {
@@ -446,43 +282,22 @@
   gap: var(--space-2);
 }
 
-.session-revoke-button {
-  display: grid;
-  flex: none;
-  width: var(--control-icon-compact);
-  height: var(--control-icon-compact);
-  place-items: center;
-  padding: 0;
-  border: 0;
-  border-radius: var(--corner-icon-button);
-  background: transparent;
-  color: var(--danger);
-  cursor: pointer;
-  transition: background-color var(--motion-duration-feedback) ease;
-}
-
-.session-revoke-button svg {
-  width: var(--icon-xs);
-  height: var(--icon-xs);
-}
-
-.session-revoke-button:hover {
-  background: var(--danger-background);
-}
-
-.session-revoke-button:disabled {
-  cursor: default;
-  opacity: 0.5;
-}
-
-.session-name {
+.session-name:not(.truncated-text) {
   display: flex;
   align-items: center;
   gap: var(--space-4);
+}
+
+.session-name {
   color: var(--text);
   font-size: var(--type-body);
   font-weight: var(--weight-medium);
   line-height: 1.25;
+}
+
+.session-name > .truncated-text {
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
 .session-icon {
@@ -499,14 +314,14 @@
   height: var(--icon-lg);
 }
 
-/* 0.5px 由实测得出：0 偏移时徽章与标题墨迹中心差 0.03px，但底色框
-   上缘比标题墨迹顶部高 2.6px、下缘只低 1.58px，视觉读作偏高；
-   0.5px 让底色框相对文字墨迹上下对称（各 2.08px）。 */
 .session-current-badge {
+  flex: none;
+  white-space: nowrap;
   position: relative;
   top: 0.5px;
   padding: var(--space-1) var(--space-4);
   border-radius: var(--radius-pill);
+  corner-shape: round;
   background: var(--color-blue-soft);
   color: var(--color-blue-text);
   font-size: var(--type-micro);
@@ -519,143 +334,7 @@
   color: var(--muted-text);
   font-size: var(--type-caption);
   line-height: 1.4;
-  text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.avatar-pick-body {
-  display: grid;
-  place-items: center;
-  gap: var(--space-6);
-  padding: var(--space-4) 0 var(--space-2);
-}
-
-.avatar-preview {
-  width: 72px;
-  height: 72px;
-  flex: 0 0 72px;
-  font-size: var(--type-page);
-}
-
-.avatar-pick-hint {
-  margin: 0;
-  color: var(--muted-text);
-  font-size: var(--type-caption);
-  line-height: 1.4;
-  text-align: center;
-}
-
-.avatar-crop-body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
-}
-
-/* 裁剪视口保持正方形；内层圆角明显小于外层 22px 卡片。 */
-.avatar-crop-area {
-  position: relative;
-  width: 300px;
-  height: 300px;
-  margin-inline: auto;
-  border-radius: var(--radius-control);
-  overflow: hidden;
-  background: var(--color-canvas);
-}
-
-/* 轨道与裁剪视口左右齐边；滑钮两端以圆心触及边缘，不占据轨道对位。 */
-.avatar-zoom-row {
-  position: relative;
-  display: flex;
-  width: 300px;
-  height: 14px;
-  margin-inline: auto;
-}
-
-.avatar-zoom-row::before {
-  content: '';
-  position: absolute;
-  inset-inline: 0;
-  top: 50%;
-  height: 3px;
-  transform: translateY(-50%);
-  border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--text) 16%, transparent);
-}
-
-.avatar-zoom-slider {
-  -webkit-appearance: none;
-  appearance: none;
-  position: relative;
-  z-index: 1;
-  width: calc(100% + 14px);
-  height: 14px;
-  margin-inline: -7px;
-  background: transparent;
-  cursor: pointer;
-}
-
-.avatar-zoom-slider::-webkit-slider-runnable-track {
-  height: 14px;
-  background: transparent;
-}
-
-.avatar-zoom-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 14px;
-  height: 14px;
-  margin-top: 0;
-  border-radius: var(--radius-circle);
-  background: var(--color-canvas);
-  border: 1px solid color-mix(in srgb, var(--text) 24%, transparent);
-  box-shadow: var(--shadow-control);
-  transition: box-shadow var(--motion-duration-feedback) ease;
-}
-
-.avatar-zoom-slider:hover::-webkit-slider-thumb {
-  box-shadow: 0 1px 5px rgb(0 0 0 / 0.26);
-}
-
-.avatar-zoom-slider:focus-visible {
-  outline: 3px solid var(--focus-ring);
-  outline-offset: 2px;
-}
-
-.avatar-repick-button {
-  align-self: center;
-  padding: 5px var(--space-6);
-  border: 0;
-  border-radius: var(--radius-compact);
-  background: transparent;
-  color: var(--color-blue);
-  cursor: pointer;
-  font-size: var(--type-body);
-  transition: background-color var(--motion-duration-feedback) ease;
-}
-
-.avatar-repick-button:hover {
-  background: color-mix(in srgb, var(--color-blue) 8%, transparent);
-}
-
-.avatar-file-input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-}
-
-@keyframes card-dialog-scrim-in {
-  from {
-    opacity: 0;
-  }
-}
-
-@keyframes card-dialog-pop {
-  from {
-    opacity: 0;
-    transform: scale(0.96);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -663,101 +342,6 @@
   .card-dialog {
     animation: none;
   }
-}
-
-.settings-action-button.is-narrow {
-  width: var(--control-button-width-compact);
-}
-
-.settings-action-button.is-wide {
-  width: var(--control-button-width-extended);
-}
-
-.settings-action-button.is-secondary {
-  background: var(--color-control);
-  color: var(--color-ink);
-}
-
-.settings-action-button.is-secondary:hover {
-  background: color-mix(in srgb, var(--color-ink) 10%, var(--color-control));
-}
-
-.settings-row-copy {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.settings-row-title {
-  font-size: var(--type-body);
-  font-weight: var(--weight-medium);
-  line-height: 1.25;
-}
-
-.settings-row-description {
-  color: var(--muted-text);
-  font-size: var(--type-caption);
-  line-height: 1.4;
-}
-
-.settings-row-control {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-}
-
-.settings-action-button {
-  width: var(--control-button-width-regular);
-  height: var(--control-button-compact);
-  padding: 0;
-  border-radius: var(--radius-pill);
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-  cursor: pointer;
-  /* 32px 胶囊内的光学校正：字号降一档并减字重，避免黑底白字在小胶囊里显得粗壮 */
-  font-size: var(--type-caption);
-  font-weight: var(--weight-medium);
-  line-height: 1;
-  transition: background-color var(--motion-duration-feedback) ease;
-}
-
-.settings-action-button:hover {
-  background: var(--color-ink-hover);
-}
-
-.settings-action-button.is-danger {
-  background: var(--danger-background);
-  color: var(--danger);
-}
-
-.settings-action-button.is-danger:hover {
-  background: color-mix(in srgb, var(--danger-background) 85%, var(--danger));
-}
-
-/* 危险操作的最终确认：实心红。入口用 .is-danger（浅红），点击后才落到这一档，
-   两档必须区分开，不能都用浅红。颜色取自会跟随主题的 --danger。 */
-.settings-action-button.is-danger-primary {
-  background: var(--danger);
-  color: var(--color-on-accent);
-}
-
-.settings-action-button.is-danger-primary:hover {
-  background: color-mix(in srgb, var(--danger) 88%, #000000);
-}
-
-/* 取消 / 关闭：描边次要按钮。灰色实心是 Utility（查看、管理、普通设置入口），
-   不得拿来当取消。文字和边框用会随主题翻转的 --text / --border。 */
-.settings-action-button.is-outline {
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--text);
-}
-
-.settings-action-button.is-outline:hover {
-  border-color: color-mix(in srgb, var(--text) 24%, transparent);
-  background: color-mix(in srgb, var(--text) 8%, transparent);
 }
 
 @keyframes auth-spinner {
@@ -771,6 +355,7 @@
   gap: var(--space-1);
   padding: var(--space-1);
   border-radius: var(--radius-pill);
+  corner-shape: round;
   background: var(--surface-muted);
 }
 
@@ -779,6 +364,7 @@
   height: 26px;
   padding: 0 9px;
   border-radius: var(--radius-pill);
+  corner-shape: round;
   background: transparent;
   color: var(--muted-text);
   cursor: pointer;
@@ -800,6 +386,7 @@
   flex: 0 0 36px;
   padding: 0;
   border-radius: var(--radius-pill);
+  corner-shape: round;
   background: color-mix(in srgb, var(--text) 18%, transparent);
   cursor: pointer;
   transition: background var(--motion-duration-feedback) ease;
@@ -816,6 +403,7 @@
   width: 16px;
   height: 16px;
   border-radius: var(--radius-circle);
+  corner-shape: round;
   background: var(--color-canvas);
   box-shadow: 0 1px 3px rgba(20, 22, 26, 0.24);
   transition: transform var(--motion-duration-feedback)
@@ -826,6 +414,19 @@
   display: flex;
   align-items: flex-start;
   gap: var(--space-6);
+  flex-wrap: wrap;
+}
+
+@container settings-panel (max-width: 480px) {
+  .settings-row.is-rich {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-row);
+  }
+
+  .settings-row.is-rich .panel-row-control {
+    min-width: 0;
+  }
 }
 
 .settings-appearance-option {
@@ -845,6 +446,7 @@
   width: 84px;
   height: 54px;
   border-radius: var(--corner-appearance-preview);
+  corner-shape: var(--surface-corner-shape);
   background: transparent;
 }
 
@@ -876,6 +478,7 @@
   overflow: hidden;
   border: var(--hairline-width) solid rgba(37, 38, 43, 0.16);
   border-radius: var(--corner-appearance-window);
+  corner-shape: var(--surface-corner-shape);
   background: var(--preview-background);
   box-shadow: 0 2px 7px rgba(20, 22, 26, 0.1);
 }
@@ -890,6 +493,8 @@
 
 .settings-preview-window.is-single {
   inset: 0;
+  border-radius: inherit;
+  corner-shape: inherit;
 }
 
 .settings-preview-window.is-system-light {
@@ -921,6 +526,7 @@
   position: absolute;
   right: 7px;
   border-radius: var(--radius-pill);
+  corner-shape: round;
   background: var(--preview-muted);
 }
 
@@ -945,4 +551,22 @@
 
 .settings-switch[aria-checked='true'] .settings-switch-thumb {
   transform: translateX(16px);
+}
+
+.card-dialog-actions {
+  margin-top: var(--space-7);
+}
+.sessions-list {
+  height: calc(var(--panel-row-height) * 2 + var(--line-width-divider));
+}
+.sessions-loading {
+  min-height: var(--panel-row-height);
+  display: flex;
+  align-items: center;
+  margin: 0;
+}
+
+.settings-content {
+  animation: content-reveal var(--motion-duration-content)
+    var(--motion-ease-feedback);
 }

@@ -2,6 +2,7 @@ import type { Conversation, Message } from '@velin/contracts/chat'
 import type {
   ChatEvent,
   SendMessageRequest,
+  StopMessageRequest,
 } from '@velin/contracts/chat-protocol'
 import type { VelinApi } from '@velin/contracts/velin-api'
 import { chatLimits } from '@velin/contracts/policy'
@@ -49,8 +50,8 @@ export function promptMessages(
   return prompt
 }
 
-// All stream transitions happen against the same synchronous state. React reads
-// snapshots; no parallel ref can disagree with the rendered conversations.
+// 流式状态转换都基于同一份同步状态，React 读取快照；
+// 不维护可能与已渲染对话不一致的平行 ref。
 export function applyChatEvent(
   state: ChatState,
   event: ChatEvent,
@@ -59,7 +60,7 @@ export function applyChatEvent(
   const request = state.requests[event.conversationId]
   if (!request || request.requestId !== event.requestId) return state
   if (event.type === 'message-start') {
-    if (request.messageId) return state // duplicate start must not append a second reply
+    if (request.messageId) return state // 重复开始事件不能追加第二条回复。
     return {
       ...state,
       requests: {
@@ -186,7 +187,7 @@ export function createChatStore(
   function stop(conversationId: string) {
     const request = state.requests[conversationId]
     if (!request) return
-    // Invalidate locally before IPC. Late deltas and terminal events are ignored.
+    // 发送 IPC 前先让本地请求失效，忽略迟到增量与终止事件。
     update(
       applyChatEvent(
         state,
@@ -194,7 +195,24 @@ export function createChatStore(
         Date.now(),
       ),
     )
-    gateway.stop({ requestId: request.requestId, conversationId })
+    if (!dispatchStop({ requestId: request.requestId, conversationId })) {
+      update({
+        ...state,
+        errors: {
+          ...state.errors,
+          [conversationId]: '回复已在本地停止，但停止请求未送达。',
+        },
+      })
+    }
+  }
+  function dispatchStop(request: StopMessageRequest) {
+    try {
+      gateway.stop(request)
+      return true
+    } catch {
+      // 传输失败不能中断账号清理或阻止其他请求收到停止通知。
+      return false
+    }
   }
   return {
     getSnapshot: () => state,
@@ -299,7 +317,7 @@ export function createChatStore(
       const requests = Object.values(state.requests)
       update(emptyState())
       requests.forEach(({ requestId, conversationId }) =>
-        gateway.stop({ requestId, conversationId }),
+        dispatchStop({ requestId, conversationId }),
       )
     },
   }

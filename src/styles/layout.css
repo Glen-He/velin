@@ -16,7 +16,7 @@
   color: var(--text);
 }
 
-/* Keep the chat draft mounted while the full-window auth canvas is open. */
+/* 认证画布打开期间保留挂载的聊天草稿。 */
 .app-shell[hidden] {
   display: none;
 }
@@ -40,45 +40,4 @@
   cursor: col-resize;
   -webkit-user-select: none;
   user-select: none;
-}
-
-/* Chromium keeps border-radius as the fallback; supported builds render these
-   custom surfaces with the continuous curvature used by current macOS UI. */
-@supports (corner-shape: squircle) {
-  .sidebar-toggle,
-  .new-conversation-button,
-  .account-button,
-  .conversation-item-row,
-  .conversation-drag-preview,
-  .conversation-item,
-  .conversation-context-menu,
-  .context-menu-item,
-  .user-message,
-  .message-action-button,
-  .message-editor,
-  .message-editor-button,
-  .assistant-message pre,
-  .assistant-message :not(pre) > code,
-  .assistant-message [data-streamdown='code-block'],
-  .assistant-message [data-streamdown='code-block-copy-button'],
-  .chat-error {
-    corner-shape: squircle;
-  }
-
-  .desktop-auth-code-form > div,
-  .desktop-auth-code-form button,
-  .settings-navigation-item,
-  .settings-back-button,
-  .settings-search-field,
-  .settings-icon-button,
-  .card-dialog,
-  .card-dialog-input,
-  .settings-card,
-  .settings-appearance-preview,
-  .settings-preview-window,
-  .avatar-crop-area,
-  .avatar-repick-button,
-  .session-revoke-button {
-    corner-shape: squircle;
-  }
 }

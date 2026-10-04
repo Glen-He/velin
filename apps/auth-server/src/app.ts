@@ -1,5 +1,6 @@
 import { serveStatic } from '@hono/node-server/serve-static'
 import { Hono } from 'hono'
+import { limitRequestBody } from './request-body-limit.js'
 import { secureHeaders } from 'hono/secure-headers'
 import { resolve } from 'node:path'
 import { auth } from './auth.js'
@@ -14,6 +15,7 @@ export function createApp() {
   const app = new Hono()
 
   app.use('*', secureHeaders())
+  app.use('/api/*', limitRequestBody)
 
   app.get('/api/health', async (context) => {
     await databasePool.query('select 1')

@@ -1,0 +1,53 @@
+/* 弹层只在打开时入场，内部读取或重排不重播外壳动画。 */
+@keyframes surface-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+@keyframes scrim-reveal {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes content-reveal {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes flow-enter-forward {
+  from {
+    opacity: 0;
+    transform: translateX(var(--motion-step-distance));
+  }
+}
+@keyframes flow-leave-forward {
+  to {
+    opacity: 0;
+    transform: translateX(calc(-1 * var(--motion-step-distance)));
+  }
+}
+@keyframes flow-enter-backward {
+  from {
+    opacity: 0;
+    transform: translateX(calc(-1 * var(--motion-step-distance)));
+  }
+}
+@keyframes flow-leave-backward {
+  to {
+    opacity: 0;
+    transform: translateX(var(--motion-step-distance));
+  }
+}
+.motion-step {
+  animation: flow-enter-forward var(--motion-duration-step)
+    var(--motion-ease-standard);
+}
+.motion-step[data-direction='backward'] {
+  animation-name: flow-enter-backward;
+}
+@media (prefers-reduced-motion: reduce) {
+  .motion-step {
+    animation: none;
+  }
+}

@@ -14,7 +14,9 @@ import type { FormEvent } from 'react'
 import { actionErrorMessage, isStepUpRequired } from '../api/http'
 import { registerPasskey } from '../auth/passkey'
 import { authClient } from '../auth-client'
-import { errorMessage, newPasswordError, useSendSlot } from '../shared'
+import { errorMessage } from '@velin/contracts/error-copy'
+import { newPasswordError } from '@velin/contracts/policy'
+import { useSendSlot } from './useSendSlot'
 import {
   runPasskeyStepUp,
   sendStepUpEmailCode,
@@ -64,11 +66,12 @@ export function useSecurityFlow({
   )
   // 卡片内走过的步骤栈。第一屏没有返回，返回只在卡片内的界面之间退，
   // 不会退回网页，也不会顺手把卡片关掉。
-  const [trail, dispatchHistory] = useReducer(
+  const [history, dispatchHistory] = useReducer(
     securityHistoryReducer,
     operation,
     initialSecurityHistory,
   )
+  const trail = history.stages
   const stage = trail[trail.length - 1]
   const previousStage = trail[trail.length - 2]
   const [channel, setChannel] = useState<StepUpChannel>(channels[0])
@@ -606,6 +609,7 @@ export function useSecurityFlow({
 
   return {
     stage,
+    direction: history.direction,
     previousStage,
     channel,
     code,

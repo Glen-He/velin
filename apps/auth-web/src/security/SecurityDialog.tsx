@@ -1,3 +1,4 @@
+import { Button, ActionGroup } from '@velin/ui/Button.tsx'
 import { Modal } from '@velin/ui/Modal.tsx'
 import { PasswordField } from '@velin/ui/PasswordField.tsx'
 import { passwordPolicyMessage } from '@velin/contracts/policy'
@@ -12,7 +13,7 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { TotpQRCode } from './TotpQRCode'
-import type { useSendSlot } from '../shared'
+import type { useSendSlot } from './useSendSlot'
 import {
   stepUpChannelLabel,
   stepUpFieldLabel,
@@ -180,7 +181,7 @@ export function SecurityDialog({
   // 文字入口属于正文最后一槽，操作行只放取消与推进，两者不抢同一行。
   const switchEntry = (label: string, onClick: () => void) => (
     <button
-      className="text-button dialog-switch"
+      className="text-action dialog-switch"
       type="button"
       disabled={working || verifying}
       onClick={onClick}
@@ -190,13 +191,9 @@ export function SecurityDialog({
   )
 
   const cancelButton = (
-    <button
-      className="security-action is-outline"
-      type="button"
-      onClick={onClose}
-    >
+    <Button variant="outline" type="button" onClick={onClose}>
       取消
-    </button>
+    </Button>
   )
 
   return (
@@ -248,7 +245,9 @@ export function SecurityDialog({
           <div className="dialog-body">
             {stage === 'verify' ? (
               <form
-                className="dialog-stage"
+                className="dialog-stage motion-step"
+                data-direction={flow.direction}
+                key={stage}
                 noValidate
                 onSubmit={confirmStepUp}
               >
@@ -287,27 +286,31 @@ export function SecurityDialog({
                   </div>
                 </div>
                 {noticeLine}
-                <div className="dialog-foot">
+                <ActionGroup className="dialog-foot">
                   {cancelButton}
                   {/* 删除通行密钥没有第二层确认：验证一过就直接删除，
                     所以这一步的提交是危险操作的最终确认，不是普通主操作。 */}
-                  <button
-                    className={
+                  <Button
+                    variant={
                       operation === 'removePasskey'
-                        ? 'security-action is-danger-primary'
-                        : 'security-action is-primary'
+                        ? 'danger-primary'
+                        : 'primary'
                     }
                     type="submit"
                     disabled={verifying || !advanceReady}
                   >
                     {channel === 'passkey' ? '验证' : '确认'}
-                  </button>
-                </div>
+                  </Button>
+                </ActionGroup>
               </form>
             ) : null}
 
             {stage === 'methods' ? (
-              <div className="dialog-stage">
+              <div
+                className="dialog-stage motion-step"
+                data-direction={flow.direction}
+                key={stage}
+              >
                 <div className="dialog-fields">
                   <div className="dialog-fields-inner">
                     <div
@@ -343,16 +346,22 @@ export function SecurityDialog({
                 {noticeLine}
                 {/* 这一步没有按钮，唯一的文字入口占住操作行槽位：靠左、贴底，
                   与卡片底边只隔一个内边距，和其他步骤的按钮同一条基线。 */}
-                <div className="dialog-foot">
+                <ActionGroup className="dialog-foot">
                   {previousStage === 'password'
                     ? switchEntry('返回用旧密码修改', backToPasswordStage)
                     : switchEntry(`返回${stepUpChannelLabel(channel)}`, goBack)}
-                </div>
+                </ActionGroup>
               </div>
             ) : null}
 
             {stage === 'password' ? (
-              <form className="dialog-stage" noValidate onSubmit={savePassword}>
+              <form
+                className="dialog-stage motion-step"
+                data-direction={flow.direction}
+                key={stage}
+                noValidate
+                onSubmit={savePassword}
+              >
                 <div className="dialog-fields">
                   <div className="dialog-fields-inner">
                     <div className="field-row">
@@ -388,22 +397,24 @@ export function SecurityDialog({
                   </div>
                 </div>
                 {noticeLine}
-                <div className="dialog-foot">
+                <ActionGroup className="dialog-foot">
                   {cancelButton}
-                  <button
-                    className="security-action is-primary"
+                  <Button
+                    variant="primary"
                     type="submit"
                     disabled={working || !advanceReady}
                   >
                     保存
-                  </button>
-                </div>
+                  </Button>
+                </ActionGroup>
               </form>
             ) : null}
 
             {stage === 'newPassword' ? (
               <form
-                className="dialog-stage"
+                className="dialog-stage motion-step"
+                data-direction={flow.direction}
+                key={stage}
                 noValidate
                 onSubmit={submitNewPassword}
               >
@@ -430,22 +441,24 @@ export function SecurityDialog({
                   </div>
                 </div>
                 {noticeLine}
-                <div className="dialog-foot">
+                <ActionGroup className="dialog-foot">
                   {cancelButton}
-                  <button
-                    className="security-action is-primary"
+                  <Button
+                    variant="primary"
                     type="submit"
                     disabled={working || !advanceReady}
                   >
                     确认
-                  </button>
-                </div>
+                  </Button>
+                </ActionGroup>
               </form>
             ) : null}
 
             {stage === 'newEmail' ? (
               <form
-                className="dialog-stage"
+                className="dialog-stage motion-step"
+                data-direction={flow.direction}
+                key={stage}
                 noValidate
                 onSubmit={changeToNewEmail}
               >
@@ -485,22 +498,24 @@ export function SecurityDialog({
                   </div>
                 </div>
                 {noticeLine}
-                <div className="dialog-foot">
+                <ActionGroup className="dialog-foot">
                   {cancelButton}
-                  <button
-                    className="security-action is-primary"
+                  <Button
+                    variant="primary"
                     type="submit"
                     disabled={working || !advanceReady}
                   >
                     确认
-                  </button>
-                </div>
+                  </Button>
+                </ActionGroup>
               </form>
             ) : null}
 
             {stage === 'twoFactorPassword' ? (
               <form
-                className="dialog-stage"
+                className="dialog-stage motion-step"
+                data-direction={flow.direction}
+                key={stage}
                 noValidate
                 onSubmit={submitTwoFactorPassword}
               >
@@ -518,26 +533,26 @@ export function SecurityDialog({
                   </div>
                 </div>
                 {noticeLine}
-                <div className="dialog-foot">
+                <ActionGroup className="dialog-foot">
                   {cancelButton}
-                  <button
-                    className={
-                      operation === 'disableTwoFactor'
-                        ? 'security-action danger-button'
-                        : 'security-action is-primary'
+                  <Button
+                    variant={
+                      operation === 'disableTwoFactor' ? 'danger' : 'primary'
                     }
                     type="submit"
                     disabled={working || !advanceReady}
                   >
                     {operation === 'disableTwoFactor' ? '关闭' : '下一步'}
-                  </button>
-                </div>
+                  </Button>
+                </ActionGroup>
               </form>
             ) : null}
 
             {stage === 'totpVerify' && enrollment ? (
               <form
-                className="dialog-stage"
+                className="dialog-stage motion-step"
+                data-direction={flow.direction}
+                key={stage}
                 noValidate
                 onSubmit={finishTwoFactor}
               >
@@ -555,21 +570,25 @@ export function SecurityDialog({
                   </div>
                 </div>
                 {noticeLine}
-                <div className="dialog-foot">
+                <ActionGroup className="dialog-foot">
                   {cancelButton}
-                  <button
-                    className="security-action is-primary"
+                  <Button
+                    variant="primary"
                     type="submit"
                     disabled={working || !advanceReady}
                   >
                     启用
-                  </button>
-                </div>
+                  </Button>
+                </ActionGroup>
               </form>
             ) : null}
 
             {stage === 'backupCodes' && enrollment ? (
-              <div className="dialog-stage">
+              <div
+                className="dialog-stage motion-step"
+                data-direction={flow.direction}
+                key={stage}
+              >
                 <div className="dialog-fields">
                   <div className="dialog-fields-inner">
                     <p className="panel-hint">
@@ -583,20 +602,24 @@ export function SecurityDialog({
                   </div>
                 </div>
                 {noticeLine}
-                <div className="dialog-foot">
-                  <button
-                    className="security-action is-primary"
+                <ActionGroup className="dialog-foot">
+                  <Button
+                    variant="primary"
                     type="button"
                     onClick={() => onCompleted('双重认证已开启。')}
                   >
                     完成
-                  </button>
-                </div>
+                  </Button>
+                </ActionGroup>
               </div>
             ) : null}
 
             {stage === 'running' ? (
-              <div className="dialog-stage">
+              <div
+                className="dialog-stage motion-step"
+                data-direction={flow.direction}
+                key={stage}
+              >
                 <div className="dialog-fields">
                   <div className="dialog-fields-inner">
                     <p className="panel-hint">
@@ -607,18 +630,18 @@ export function SecurityDialog({
                   </div>
                 </div>
                 {noticeLine}
-                <div className="dialog-foot">
+                <ActionGroup className="dialog-foot">
                   {cancelButton}
                   {!working && message ? (
-                    <button
+                    <Button
                       type="button"
-                      className="security-action is-primary"
+                      variant="primary"
                       onClick={restartVerification}
                     >
                       重试
-                    </button>
+                    </Button>
                   ) : null}
-                </div>
+                </ActionGroup>
               </div>
             ) : null}
           </div>

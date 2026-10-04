@@ -1,5 +1,6 @@
 import { Pool } from 'pg'
 import { config } from './config.js'
+import { logger } from './logging.js'
 
 export const databasePool = new Pool({
   connectionString: config.databaseUrl,
@@ -10,5 +11,5 @@ export const databasePool = new Pool({
 })
 
 databasePool.on('error', (error) => {
-  console.error('PostgreSQL 连接池出现意外错误。', error)
+  logger.error('database.pool_error', { error })
 })

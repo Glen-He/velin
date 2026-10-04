@@ -2,6 +2,7 @@ import { serve } from '@hono/node-server'
 import { createApp } from './app.js'
 import { config } from './config.js'
 import { databasePool } from './database.js'
+import { logger } from './logging.js'
 
 const app = createApp()
 
@@ -11,10 +12,10 @@ const server = serve({
   port: config.port,
 })
 
-console.info(`Velin 认证服务已启动：${config.authBaseUrl}`)
+logger.info('server.started', { origin: new URL(config.authBaseUrl).origin })
 
 async function shutDown(signal: string) {
-  console.info(`收到 ${signal}，正在关闭认证服务。`)
+  logger.info('server.shutdown_requested', { signal })
 
   server.close(async () => {
     await databasePool.end()

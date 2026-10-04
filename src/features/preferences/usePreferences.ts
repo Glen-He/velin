@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useState } from 'react'
-import type { AppearanceMode, InterfaceFontScale } from '../settings/types'
+import type { AppearanceMode, InterfaceFontScale } from './types'
 import {
   preferenceStorageKeys,
   readStoredBoolean,

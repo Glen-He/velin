@@ -1,3 +1,6 @@
+import { serviceOrigin } from '@velin/contracts/service-url'
+import { errorMessage } from '@velin/contracts/error-copy'
+import { isRecord } from '@velin/contracts/value'
 import { toDesktopSessions } from './session-dto'
 import { electronClient } from '@better-auth/electron/client'
 import type { ElectronClientOptions } from '@better-auth/electron/client'
@@ -13,13 +16,15 @@ import type {
 } from '@velin/contracts/auth-protocol'
 import type { SessionClientMetadata } from '@velin/contracts/session-client'
 
-export const apiServerUrl = (
-  process.env.VELIN_AUTH_SERVER_URL ?? 'http://localhost:3000'
-).replace(/\/$/, '')
+export const apiServerUrl = serviceOrigin(
+  process.env.VELIN_AUTH_SERVER_URL ?? 'http://localhost:3000',
+  !app.isPackaged,
+)
 
-export const authWebUrl = (
-  process.env.VELIN_AUTH_WEB_URL ?? 'http://localhost:5174'
-).replace(/\/$/, '')
+export const authWebUrl = serviceOrigin(
+  process.env.VELIN_AUTH_WEB_URL ?? 'http://localhost:5174',
+  !app.isPackaged,
+)
 
 function toAuthUser(user: Record<string, unknown>): AuthUser {
   return {
@@ -42,6 +47,15 @@ function sanitizeUser(user: User & Record<string, unknown>) {
   }
 }
 
+const authenticationListeners = new Set<(user: AuthUser) => void>()
+
+export function subscribeAuthenticatedUser(listener: (user: AuthUser) => void) {
+  authenticationListeners.add(listener)
+  return () => {
+    authenticationListeners.delete(listener)
+  }
+}
+
 const electronClientOptions = {
   clientID: 'velin-desktop',
   signInURL: `${authWebUrl}/sign-in`,
@@ -54,6 +68,8 @@ const electronClientOptions = {
   storagePrefix: 'velin-auth',
   cookiePrefix: 'velin-auth',
   channelPrefix: 'velin-auth-internal',
+  // 头像经受限的自有 IPC 获取，不注册绕过 CSP 的额外图片代理协议。
+  userImageProxy: { enabled: false },
   sanitizeUser,
 } satisfies ElectronClientOptions
 
@@ -71,10 +87,10 @@ const configuredManualRegistrationClient = electronClient({
   signInURL: `${authWebUrl}/sign-in?mode=sign-up&flow=manual-code`,
 })
 
-// Electron 44's RequestInit includes `duplex: "full"`, while Better Fetch's
-// public client type currently narrows it to `"half"`. The runtime contracts
-// are compatible; preserve the plugin's concrete action types across that
-// upstream declaration mismatch.
+// Electron 44 的 RequestInit 允许 duplex: "full"；Better Fetch 的
+// 公开类型目前只允许 "half"。实际运行协议兼容，
+// 因此在上游声明不一致的边界保留插件的具体动作类型，
+// 避免把不匹配扩散到调用方。
 const compatibleElectronClient =
   configuredElectronClient as unknown as BetterAuthClientPlugin &
     typeof configuredElectronClient
@@ -91,6 +107,20 @@ const compatibleManualRegistrationClient =
 export const authClient = createAuthClient({
   baseURL: apiServerUrl,
   plugins: [compatibleElectronClient],
+  fetchOptions: {
+    onSuccess(context) {
+      // 授权交接的成功入口涵盖手动授权码与深链；仅发布白名单资料。
+      if (
+        new URL(context.request.url).pathname.endsWith('/electron/token') &&
+        isRecord(context.data) &&
+        isRecord(context.data.user)
+      ) {
+        const user = toAuthUser(context.data.user)
+        if (user.id)
+          authenticationListeners.forEach((listener) => listener(user))
+      }
+    },
+  },
 })
 
 const registrationAuthClient = createAuthClient({
@@ -183,21 +213,8 @@ export async function signOutAuthenticatedUser() {
 }
 
 function readProfileErrorMessage(error: unknown, fallback: string) {
-  if (typeof error === 'object' && error !== null && 'body' in error) {
-    const body = (error as { body: unknown }).body
-    if (typeof body === 'object' && body !== null && 'message' in body) {
-      const message = (body as { message: unknown }).message
-      if (
-        typeof message === 'string' &&
-        message.length > 0 &&
-        message.length <= 200
-      ) {
-        return message
-      }
-    }
-  }
-
-  return fallback
+  const body = isRecord(error) && isRecord(error.body) ? error.body : error
+  return errorMessage(body, fallback)
 }
 
 export async function updateDisplayName(name: string) {

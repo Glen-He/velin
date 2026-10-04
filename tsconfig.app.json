@@ -11,7 +11,7 @@
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
 
-    /* Bundler mode */
+    /* 模块解析与运行环境。 */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
@@ -19,7 +19,7 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Linting */
+    /* 静态检查。 */
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,

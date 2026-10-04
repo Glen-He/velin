@@ -13,14 +13,15 @@
   --border: var(--color-border-subtle);
   --text: var(--color-ink);
   --muted-text: var(--color-secondary);
-  --subtle-text: var(--color-icon-muted);
+  --subtle-text: var(--color-secondary);
   --accent: var(--color-primary);
   --accent-contrast: var(--color-on-primary);
   --user-bubble: var(--color-sunken);
   --assistant-bubble: transparent;
-  --danger: var(--color-danger);
+  --danger: var(--color-danger-text);
+  --danger-fill: var(--color-danger-fill);
   --danger-background: var(--color-danger-soft);
-  --menu-selection: var(--color-blue);
+  --menu-selection: var(--color-accent-fill);
   --menu-selection-text: var(--color-on-accent);
   --menu-icon-size: var(--icon-sm);
   --focus-ring: var(--color-focus);
@@ -28,7 +29,7 @@
   --titlebar-height: 55px;
   --sidebar-toggle-inline-position: 80px;
   --sidebar-resize-track: 1px;
-  --hairline-width: 0.5px;
+  --hairline-width: var(--line-width-divider);
   --sidebar-control-height: 38px;
   --sidebar-inline-gutter: 10px;
   --sidebar-item-inline-padding: var(--space-5);
@@ -40,9 +41,12 @@
   --corner-menu-item: var(--radius-menu-item);
   --corner-message: var(--radius-message);
   --corner-message-tail: var(--radius-message-tail);
-  --corner-settings-card: var(--radius-card);
   --corner-appearance-preview: var(--radius-preview);
   --corner-appearance-window: var(--radius-preview-window);
+  --surface-corner-shape: squircle;
+  --surface-radius-card: var(--radius-card);
+  --surface-radius-field: var(--radius-field);
+  --surface-radius-control: var(--radius-control);
   --composer-control-size: var(--control-icon-default);
   --composer-line-box-height: 20px;
   --composer-line-height: 1.35;
@@ -50,7 +54,7 @@
   --composer-shell-padding: var(--space-3);
   --composer-shell-radius: 24px;
   --composer-font-size: var(--type-input);
-  --chat-content-max-width: 900px;
+  --chat-content-max-width: var(--layout-reading-max-width);
   /* 相对主区域而不是窗口：侧边栏宽度、窗口尺寸都不参与这里的计算。 */
   --chat-content-inline-padding: clamp(var(--space-7), 6%, 80px);
 }
@@ -72,8 +76,7 @@
 }
 
 body {
-  min-width: 900px;
-  min-height: 600px;
+  min-width: 0;
   margin: 0;
   overflow: hidden;
 }
@@ -90,7 +93,7 @@ button {
   user-select: none;
 }
 
-/* 客户端一律不显示视觉滚动条（见 AGENTS.md「滚动与滚动条」）。
+/* 客户端一律不显示视觉滚动条（见 docs/interface-guidelines.md）。
    只隐藏表现：滚动仍完全交给原生 overflow，滚轮、触控板、键盘、程序化滚动、
    focus 滚动到可见和辅助技术行为都不受影响，也不得为此写任何 JS 滚动逻辑。 */
 * {

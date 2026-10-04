@@ -1,4 +1,7 @@
 @import './themes.css';
+@import './motion.css';
+@import './text-action.css';
+@import './panel.css';
 
 :root {
   --font-sans:
@@ -9,7 +12,7 @@
   --line-height-body: 1.5;
   --line-height-reading: 1.7;
 
-  /* Space scale: control (2–8), related content (10–16), group (20–32), page (40–64). */
+  /* 间距按控件、关联内容、分组与页面分档，语义别名引用底层标尺。 */
   --space-1: 2px;
   --space-2: 4px;
   --space-3: 6px;
@@ -32,12 +35,12 @@
   --space-section: var(--space-10);
   --space-page: var(--space-14);
   --radius-circle: 50%;
-  --radius-control: 8px;
-  --radius-message-tail: 6px;
+  --radius-control: 12px;
+  --radius-message-tail: 8px;
   --radius-preview: 13px;
   --radius-preview-window: 11px;
 
-  /* Text roles: keep font size in rem so the desktop font-scale setting works. */
+  /* 字号按文字角色使用 rem，支持桌面的字号设置。 */
   --type-micro: 0.6875rem;
   --type-caption: 0.75rem;
   --type-control: 0.8125rem;
@@ -52,17 +55,17 @@
   --weight-semibold: 600;
   --weight-bold: 700;
 
-  /* Rectangles follow their role; circles and pills use complete curvature. */
-  --radius-compact: 10px;
-  --radius-field: 12px;
-  --radius-menu-item: 13px;
-  --radius-sidebar-item: 15px;
-  --radius-menu: 16px;
-  --radius-message: 18px;
-  --radius-card: 22px;
+  /* 矩形按角色选择圆角；圆形与胶囊使用完整曲率。 */
+  --radius-compact: 12px;
+  --radius-field: 16px;
+  --radius-menu-item: 16px;
+  --radius-sidebar-item: 16px;
+  --radius-menu: 20px;
+  --radius-message: 24px;
+  --radius-card: 28px;
   --radius-pill: 999px;
 
-  /* Glyph sizes are independent from the clickable control dimensions. */
+  /* 图标墨迹尺寸与控件点击区域分别定义。 */
   --icon-xs: 14px;
   --icon-sm: 16px;
   --icon-md: 18px;
@@ -77,36 +80,68 @@
   --control-field-height: 44px;
   --control-submit-height: 42px;
   --control-button-compact: 32px;
-  --control-button-width-compact: 64px;
-  --control-button-width-regular: 88px;
-  --control-button-width-extended: 112px;
+  --control-touch-target: 44px;
+  --button-height: var(--control-button-compact);
+  --button-height-regular: var(--control-submit-height);
+  --button-font-size: var(--type-caption);
+  --line-width-panel: 1px;
+  --line-width-divider: 1px;
+  --line-width-control: 1px;
+  --panel-row-height: 68px;
+  --panel-row-padding: var(--space-6);
+  --panel-row-gutter: var(--space-7);
+  --panel-avatar-size: 40px;
   --control-button-gap: var(--space-control-gap);
-  --dialog-width-base: 400px;
-  --dialog-width-large: 600px;
-  --dialog-width-extra: 800px;
+  /* 内容列决定页面卡片宽度；编辑、任务与列表弹窗按真实职责选档。 */
+  --layout-auth-max-width: 384px;
+  --layout-settings-card-max-width: 720px;
+  --layout-settings-gutter: var(--space-page);
+  --layout-settings-max-width: calc(
+    var(--layout-settings-card-max-width) + var(--layout-settings-gutter) * 2
+  );
+  --layout-account-max-width: var(--layout-settings-card-max-width);
+  /* 聊天列兼顾正文、代码和表格；随字号伸缩，并受主区域可用宽度限制。 */
+  --layout-reading-max-width: 54rem;
+  --layout-page-gutter: var(--space-9);
+  --layout-modal-gutter: var(--space-10);
+  --layout-avatar-crop-max-width: 300px;
+  --dialog-width-edit: 400px;
+  --dialog-width-list: 600px;
 
-  /* Short, purpose-based motion shared by desktop and browser authentication. */
+  /* 桌面与网页按反馈、面板、内容与步骤共用动效标尺。 */
   --motion-duration-feedback: 140ms;
   --motion-duration-panel: 145ms;
   --motion-duration-content: 180ms;
   --motion-duration-step: 220ms;
+  --motion-duration-overlay: 180ms;
+  --motion-step-distance: 14px;
+  --motion-ease-feedback: ease-out;
   --motion-duration-copied: 1600ms;
   --motion-ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
 
-  --web-radius-card: var(--radius-menu);
-  --row-gutter: var(--space-9);
-  --row-padding: var(--space-row);
-  --row-content-height: 38px;
-  --row-height: calc(var(--row-content-height) + var(--row-padding) * 2);
-  --account-avatar-size: 44px;
-  --web-radius-field: var(--radius-compact);
-  --web-radius-control: var(--radius-control);
+  /* 圆弧与连续曲率的视觉切角不同：网页独立选档，不引用桌面矩形半径。 */
+  --web-radius-card: 16px;
+  --web-radius-field: 10px;
+  --web-radius-control: 8px;
+  --surface-corner-shape: round;
+  --surface-radius-card: var(--web-radius-card);
+  --surface-radius-field: var(--web-radius-field);
+  --surface-radius-control: var(--web-radius-control);
+  --row-padding: var(--panel-row-padding);
 
-  /* 对话框宽度取自 Apple Account 生产样式表：.modal-alert 是 450 → 335 → 290。
-     450 = 2×180 按钮 + 10 间距 + 2×40 内缩。 */
-  --web-dialog-alert-width: 450px;
-  --web-dialog-pad-inline: var(--space-page);
-  --web-dialog-pad-block: 25px;
-  --web-dialog-button-width: 180px;
+  /* 多字段任务的正文预算与认证表单共用，外框再加两侧内缩。 */
+  --web-dialog-pad-inline: var(--space-10);
+  --dialog-width-task: calc(
+    var(--layout-auth-max-width) + var(--web-dialog-pad-inline) * 2
+  );
+  --web-dialog-pad-block: var(--space-10);
   --web-dialog-button-gap: var(--space-5);
+}
+
+@media (pointer: coarse) {
+  :root {
+    --button-height: var(--control-touch-target);
+    --button-height-regular: var(--control-touch-target);
+    --button-font-size: var(--type-body);
+  }
 }

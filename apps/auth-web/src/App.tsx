@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { LoadingState } from './shared-ui'
+import { LoadingState } from './LoadingState'
 const AccountPage = lazy(() =>
   import('./account/AccountPage').then((module) => ({
     default: module.AccountPage,

@@ -68,20 +68,10 @@ const velinApi: VelinApi = {
         _event: Electron.IpcRendererEvent,
         state: AuthState,
       ) => listener(state)
-      const handleAuthenticated = (
-        _event: Electron.IpcRendererEvent,
-        user: AuthState['user'],
-      ) => listener({ user })
-
       ipcRenderer.on(authIpcChannels.stateChanged, handleState)
-      ipcRenderer.on(authIpcChannels.internalAuthenticated, handleAuthenticated)
 
       return () => {
         ipcRenderer.removeListener(authIpcChannels.stateChanged, handleState)
-        ipcRenderer.removeListener(
-          authIpcChannels.internalAuthenticated,
-          handleAuthenticated,
-        )
       }
     },
     subscribeErrors(listener: AuthErrorListener) {

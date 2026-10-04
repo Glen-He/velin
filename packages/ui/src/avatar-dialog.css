@@ -1,0 +1,153 @@
+.avatar-task {
+  width: min(100%, var(--dialog-width-task));
+}
+.avatar-task-pick-body {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-7);
+  padding-block: var(--space-3);
+}
+.avatar-task-avatar-button {
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-circle);
+  corner-shape: round;
+  background: transparent;
+  cursor: pointer;
+}
+.avatar-task-preview {
+  position: relative;
+  display: grid;
+  width: 72px;
+  height: 72px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: var(--radius-circle);
+  corner-shape: round;
+  background: var(--color-control);
+  color: var(--color-ink);
+  font-size: var(--type-auth-title);
+  font-weight: var(--weight-semibold);
+}
+.avatar-task-preview > .avatar-task-image,
+.avatar-task-preview > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-task-preview > .avatar-task-image {
+  flex: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.avatar-task-camera {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: inherit;
+  background: var(--color-avatar-overlay);
+  color: var(--color-on-accent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-duration-feedback) ease;
+}
+.avatar-task-camera svg {
+  width: var(--icon-xl);
+  height: var(--icon-xl);
+}
+.avatar-task-avatar-button:hover .avatar-task-camera,
+.avatar-task-avatar-button:focus-visible .avatar-task-camera {
+  opacity: 1;
+}
+.avatar-task-hint {
+  margin: 0;
+  color: var(--color-secondary);
+  font-size: var(--type-caption);
+  line-height: var(--line-height-body);
+  text-align: center;
+}
+.avatar-task-crop-body {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-6);
+}
+.avatar-task-crop-area {
+  position: relative;
+  width: min(100%, var(--layout-avatar-crop-max-width));
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: var(--surface-radius-control);
+  corner-shape: var(--surface-corner-shape);
+  background: var(--color-canvas);
+}
+/* 使用原生轨道命中区域，装饰层不得拦截滑块中心的指针。 */
+.avatar-task-zoom {
+  display: flex;
+  width: min(100%, var(--layout-avatar-crop-max-width));
+  min-height: var(--control-button-compact);
+}
+.avatar-task-slider {
+  appearance: none;
+  width: 100%;
+  height: var(--control-button-compact);
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.avatar-task-slider::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--color-border-control);
+}
+.avatar-task-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -7.5px;
+  border: var(--line-width-control) solid var(--color-border-control);
+  border-radius: var(--radius-circle);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-control);
+}
+.avatar-task-slider::-moz-range-track {
+  height: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--color-border-control);
+}
+.avatar-task-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: var(--line-width-control) solid var(--color-border-control);
+  border-radius: var(--radius-circle);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-control);
+}
+.avatar-task-slider:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+@media (pointer: coarse) {
+  .avatar-task-slider,
+  .avatar-task-zoom {
+    min-height: var(--control-touch-target);
+  }
+}
+.avatar-task :is(button, input):focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.avatar-task-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .avatar-task-camera {
+    transition: none;
+  }
+}

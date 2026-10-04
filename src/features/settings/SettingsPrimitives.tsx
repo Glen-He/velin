@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { PanelGroup, PanelRow } from '@velin/ui/Panel.tsx'
 
 export function Toggle({
   checked,
@@ -55,21 +56,21 @@ export function SettingsRow({
   children,
   description,
   title,
+  layout = 'compact',
 }: {
   children?: ReactNode
   description?: string
   title: string
+  layout?: 'compact' | 'rich'
 }) {
   return (
-    <div className="settings-row">
-      <div className="settings-row-copy">
-        <div className="settings-row-title">{title}</div>
-        {description ? (
-          <div className="settings-row-description">{description}</div>
-        ) : null}
-      </div>
-      {children ? <div className="settings-row-control">{children}</div> : null}
-    </div>
+    <PanelRow
+      title={title}
+      description={description}
+      className={`settings-row${layout === 'rich' ? ' is-rich' : ''}`}
+    >
+      {children}
+    </PanelRow>
   )
 }
 
@@ -81,10 +82,9 @@ export function SettingsGroup({
   title: string
 }) {
   return (
-    <section className="settings-group">
-      <h2>{title}</h2>
+    <PanelGroup title={title} className="settings-group">
       {children}
-    </section>
+    </PanelGroup>
   )
 }
 
@@ -97,8 +97,10 @@ export function SettingsPanel({
 }) {
   return (
     <div className="settings-panel">
-      <h1>{title}</h1>
-      {children}
+      <div className="settings-panel-content">
+        <h1>{title}</h1>
+        {children}
+      </div>
     </div>
   )
 }

@@ -14,50 +14,22 @@
 
 html[data-auth-direction='forward']::view-transition-old(auth-title),
 html[data-auth-direction='forward']::view-transition-old(auth-flow) {
-  animation-name: auth-leave-forward;
+  animation-name: flow-leave-forward;
 }
 
 html[data-auth-direction='forward']::view-transition-new(auth-title),
 html[data-auth-direction='forward']::view-transition-new(auth-flow) {
-  animation-name: auth-enter-forward;
+  animation-name: flow-enter-forward;
 }
 
 html[data-auth-direction='backward']::view-transition-old(auth-title),
 html[data-auth-direction='backward']::view-transition-old(auth-flow) {
-  animation-name: auth-leave-backward;
+  animation-name: flow-leave-backward;
 }
 
 html[data-auth-direction='backward']::view-transition-new(auth-title),
 html[data-auth-direction='backward']::view-transition-new(auth-flow) {
-  animation-name: auth-enter-backward;
-}
-
-@keyframes auth-leave-forward {
-  to {
-    opacity: 0;
-    transform: translateX(-14px);
-  }
-}
-
-@keyframes auth-enter-forward {
-  from {
-    opacity: 0;
-    transform: translateX(14px);
-  }
-}
-
-@keyframes auth-leave-backward {
-  to {
-    opacity: 0;
-    transform: translateX(14px);
-  }
-}
-
-@keyframes auth-enter-backward {
-  from {
-    opacity: 0;
-    transform: translateX(-14px);
-  }
+  animation-name: flow-enter-backward;
 }
 
 @media (max-width: 760px) {
@@ -67,42 +39,6 @@ html[data-auth-direction='backward']::view-transition-new(auth-flow) {
 
   .auth-content {
     min-height: 500px;
-  }
-}
-
-@media (max-width: 560px) {
-  .security-card {
-    grid-template-columns: 1fr;
-    row-gap: 18px;
-    padding: var(--space-9);
-  }
-
-  .security-card > .security-action {
-    justify-self: start;
-    margin-left: calc(var(--icon-xl) + var(--space-7));
-  }
-
-  .security-card-stacked .security-card-copy,
-  .inline-security-form,
-  .enrollment {
-    grid-column: 1;
-  }
-
-  .inline-security-form,
-  .enrollment {
-    margin-left: calc(var(--icon-xl) + var(--space-7));
-  }
-
-  .inline-security-form {
-    grid-template-columns: 1fr;
-  }
-
-  .enrollment .inline-security-form {
-    margin-left: 0;
-  }
-
-  .inline-security-form .security-action {
-    justify-self: start;
   }
 }
 
@@ -138,4 +74,9 @@ html[data-auth-direction='backward']::view-transition-new(auth-flow) {
   ::view-transition-new(auth-flow) {
     animation: none !important;
   }
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
 }

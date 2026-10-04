@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import { hashPassword } from 'better-auth/crypto'
+import { readFile } from 'node:fs/promises'
 import { operationGrantHeader } from '@velin/contracts/security'
 import type { VerificationIntent } from '@velin/contracts/security'
 
-// Explicitly opt into a disposable database; never run fixtures on user data.
+// 仅显式启用一次性测试数据库，不能把测试数据写入用户数据库。
 const enabled = Boolean(process.env.VELIN_TEST_DATABASE_URL)
 if (enabled) {
   const url = new URL(process.env.VELIN_TEST_DATABASE_URL!)
@@ -111,6 +112,153 @@ test(
       operation: 'removePasskey',
       target: 'fixture-key',
     }
+    await suite.test(
+      'profile writes apply the same Unicode name policy at the HTTP boundary',
+      async () => {
+        const name = '🪐'.repeat(32)
+        assert.equal(
+          (await request('/api/auth/update-user', { name }, first.cookie))
+            .status,
+          200,
+        )
+        const row = await db.query('select name from "user" where id = $1', [
+          first.userId,
+        ])
+        assert.equal(row.rows[0].name, name)
+        for (const invalid of ['a'.repeat(33), 'name\nnext', '  ']) {
+          assert.equal(
+            (
+              await request(
+                '/api/auth/update-user',
+                { name: invalid },
+                first.cookie,
+              )
+            ).status,
+            400,
+          )
+        }
+      },
+    )
+    await suite.test(
+      'avatar migrations remove obsolete session fields and normalize existing image references',
+      async () => {
+        const bytes = Buffer.from([255, 216, 255, 224, 0, 0])
+        await db.query(
+          'insert into "user_avatar" ("userId", "contentType", "data") values ($1, $2, $3)',
+          [first.userId, 'image/jpeg', bytes],
+        )
+        await db.query('update "user" set image = $2 where id = $1', [
+          first.userId,
+          `http://old-deployment.example/api/avatars/${first.userId}?v=1`,
+        ])
+        const migration = await readFile(
+          new URL(
+            '../migrations/006_relative_avatar_reference.up.sql',
+            import.meta.url,
+          ),
+          'utf8',
+        )
+        await db.query(migration)
+        const result = await db.query(
+          'select image from "user" where id = $1',
+          [first.userId],
+        )
+        assert.match(
+          result.rows[0].image,
+          new RegExp(`^/api/avatars/${first.userId}\\?v=\\d+$`),
+        )
+        const columns = await db.query(
+          "select column_name from information_schema.columns where table_schema = 'public' and table_name = 'session' and column_name in ('verifiedAt', 'stepUpLevel')",
+        )
+        assert.equal(columns.rowCount, 0)
+      },
+    )
+    await suite.test(
+      'avatar HTTP boundaries validate uploads and revalidate changed images',
+      async () => {
+        const bytes = new Uint8Array([255, 216, 255, 224, 0, 1])
+        const upload = (
+          cookie: string,
+          origin: string,
+          contentType = 'image/jpeg',
+          body = bytes,
+        ) =>
+          app.request('/api/avatars', {
+            method: 'POST',
+            headers: {
+              cookie,
+              origin,
+              'content-type': contentType,
+              'content-length': String(body.byteLength),
+            },
+            body,
+          })
+        assert.equal((await upload('', 'http://localhost:5174')).status, 401)
+        assert.equal(
+          (await upload(first.cookie, 'https://attacker.example')).status,
+          403,
+        )
+        assert.equal(
+          (await upload(first.cookie, 'http://localhost:5174', 'image/png'))
+            .status,
+          400,
+        )
+        assert.equal(
+          (
+            await upload(
+              first.cookie,
+              'http://localhost:5174',
+              'image/jpeg',
+              new Uint8Array([1, 2, 3, 4]),
+            )
+          ).status,
+          400,
+        )
+        const saved = await upload(first.cookie, 'http://localhost:5174')
+        assert.equal(saved.status, 200)
+        const { image } = await saved.json()
+        assert.match(
+          image,
+          new RegExp(`^/api/avatars/${first.userId}\\?v=\\d+$`),
+        )
+        const avatar = await app.request(image)
+        assert.equal(avatar.status, 200)
+        assert.equal(avatar.headers.get('content-type'), 'image/jpeg')
+        assert.deepEqual(new Uint8Array(await avatar.arrayBuffer()), bytes)
+        const etag = avatar.headers.get('etag')!
+        assert.ok(etag)
+        assert.equal(
+          (await app.request(image, { headers: { 'if-none-match': etag } }))
+            .status,
+          304,
+        )
+        const changed = new Uint8Array([255, 216, 255, 224, 0, 2])
+        assert.equal(
+          (
+            await upload(
+              first.cookie,
+              'http://localhost:5174',
+              'image/jpeg',
+              changed,
+            )
+          ).status,
+          200,
+        )
+        const refreshed = await app.request(image, {
+          headers: { 'if-none-match': etag },
+        })
+        assert.equal(refreshed.status, 200)
+        assert.notEqual(refreshed.headers.get('etag'), etag)
+        assert.match(refreshed.headers.get('cache-control')!, /must-revalidate/)
+        assert.deepEqual(new Uint8Array(await refreshed.arrayBuffer()), changed)
+        const row = await db.query('select image from "user" where id = $1', [
+          first.userId,
+        ])
+        assert.ok(
+          row.rows[0].image.startsWith(`/api/avatars/${first.userId}?v=`),
+        )
+      },
+    )
     await suite.test(
       'unverified direct credential write is blocked even for a strong login',
       async () => {
@@ -293,7 +441,7 @@ test(
         assert.equal(response.status, 200)
         const enrollment = await response.json()
         assert.ok(enrollment.backupCodes?.length)
-        // Fixture represents a completed enrollment without generating TOTP ourselves.
+        // 用已完成配置的测试记录验证边界，不自行生成 TOTP。
         await db.query(
           'update "user" set "twoFactorEnabled" = true where id = $1',
           [first.userId],

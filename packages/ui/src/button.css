@@ -1,0 +1,145 @@
+.pill-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: calc(
+    var(--action-label-units, 2) * var(--button-font-size) + var(--space-9) * 2
+  );
+  min-width: calc(
+    var(--action-label-units, 2) * var(--button-font-size) + var(--space-9) * 2
+  );
+  min-height: var(--button-height);
+  padding: var(--space-3) var(--space-9);
+  border: var(--line-width-control) solid transparent;
+  border-radius: var(--radius-pill);
+  corner-shape: round;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-family: var(--font-sans);
+  font-size: var(--button-font-size);
+  font-weight: var(--weight-medium);
+  line-height: var(--line-height-tight);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-feedback) var(--motion-ease-feedback),
+    color var(--motion-duration-feedback) var(--motion-ease-feedback),
+    border-color var(--motion-duration-feedback) var(--motion-ease-feedback);
+}
+.pill-button[data-size='regular'] {
+  --button-font-size: var(--type-body);
+  min-height: var(--button-height-regular);
+  font-weight: var(--weight-semibold);
+}
+.pill-button[data-stretch] {
+  width: 100%;
+  min-width: 0;
+}
+.pill-button[data-variant='secondary'] {
+  background: var(--color-control);
+  color: var(--color-ink);
+}
+.pill-button[data-variant='outline'] {
+  border-color: var(--color-border-control);
+  background: transparent;
+  color: var(--color-ink);
+}
+.pill-button[data-variant='accent'] {
+  background: var(--color-accent-fill);
+  color: var(--color-on-accent);
+}
+.pill-button[data-variant='danger'] {
+  background: var(--color-danger-soft);
+  color: var(--color-danger-text);
+}
+.pill-button[data-variant='danger-primary'] {
+  background: var(--color-danger-fill);
+  color: var(--color-on-accent);
+}
+@media (hover: hover) {
+  .pill-button:hover:not(:disabled) {
+    background: var(--color-ink-hover);
+  }
+  .pill-button[data-variant='secondary']:hover:not(:disabled),
+  .pill-button[data-variant='outline']:hover:not(:disabled) {
+    background: var(--color-control-hover);
+  }
+  .pill-button[data-variant='outline']:hover:not(:disabled) {
+    border-color: var(--color-border-hover);
+  }
+  .pill-button[data-variant='accent']:hover:not(:disabled) {
+    background: var(--color-blue);
+  }
+  .pill-button[data-variant='danger']:hover:not(:disabled) {
+    background: color-mix(
+      in srgb,
+      var(--color-danger-soft) 85%,
+      var(--color-danger-fill)
+    );
+  }
+  .pill-button[data-variant='danger-primary']:hover:not(:disabled) {
+    background: var(--color-danger-fill);
+  }
+}
+.pill-button:active:not(:disabled) {
+  filter: brightness(0.94);
+}
+.pill-button:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+/* 禁用是独立的中性状态，不能保留看起来仍可执行的危险色。 */
+.pill-button:disabled {
+  background: var(--color-control);
+  color: var(--color-secondary);
+  border-color: transparent;
+  cursor: default;
+  filter: none;
+  opacity: 0.65;
+}
+.pill-button svg {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  flex: none;
+}
+.action-group {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--control-button-gap);
+}
+.action-group > .pill-button {
+  width: calc(
+    var(--action-group-label-units) * var(--button-font-size) + var(--space-9) *
+      2
+  );
+  max-width: 100%;
+  min-width: 0;
+}
+.action-group[data-stretch] {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+}
+.action-group[data-stretch] > .pill-button {
+  width: 100%;
+}
+@media (max-width: 480px) and (pointer: coarse) {
+  .action-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .action-group[data-stretch] {
+    display: flex;
+  }
+  .action-group > .pill-button {
+    width: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pill-button {
+    transition: none;
+  }
+}

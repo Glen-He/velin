@@ -18,7 +18,7 @@ export function readStoredChoice<T extends string>(
       return storedValue as T
     }
   } catch {
-    // Preferences remain usable for this session if storage is unavailable.
+    // 存储不可用时，当前会话仍可使用偏好设置。
   }
 
   return fallback
@@ -36,7 +36,7 @@ export function readStoredBoolean(key: string, fallback: boolean) {
       return false
     }
   } catch {
-    // Preferences remain usable for this session if storage is unavailable.
+    // 存储不可用时，当前会话仍可使用偏好设置。
   }
 
   return fallback
@@ -46,6 +46,6 @@ export function storePreference(key: string, value: string | boolean | number) {
   try {
     window.localStorage.setItem(key, String(value))
   } catch {
-    // The visible setting still applies even if persistence is unavailable.
+    // 持久化不可用时，界面设置仍立即生效。
   }
 }

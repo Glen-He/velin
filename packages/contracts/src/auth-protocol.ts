@@ -46,6 +46,5 @@ export const authIpcChannels = {
   revokeSession: 'auth:revoke-session',
   revokeOtherSessions: 'auth:revoke-other-sessions',
   stateChanged: 'auth:state-changed',
-  internalAuthenticated: 'velin-auth-internal:authenticated',
   internalError: 'velin-auth-internal:error',
 } as const

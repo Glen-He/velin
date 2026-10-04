@@ -29,7 +29,7 @@ const environmentSchema = z
             .string()
             .refine(
               (value) => isIP(value) !== 0,
-              '代理地址必须为具体 IP 地址。',
+              'Trusted proxy addresses must be explicit IP addresses.',
             ),
         ),
       ),
@@ -65,7 +65,8 @@ const environmentSchema = z
     if (hasGoogleClientId !== hasGoogleClientSecret) {
       context.addIssue({
         code: 'custom',
-        message: 'GOOGLE_CLIENT_ID 和 GOOGLE_CLIENT_SECRET 必须同时配置。',
+        message:
+          'GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be configured together.',
         path: ['GOOGLE_CLIENT_ID'],
       })
     }
@@ -78,7 +79,8 @@ const environmentSchema = z
     ) {
       context.addIssue({
         code: 'custom',
-        message: 'SMTP 模式必须配置 SMTP_HOST、SMTP_USER 和 SMTP_PASSWORD。',
+        message:
+          'SMTP transport requires SMTP_HOST, SMTP_USER and SMTP_PASSWORD.',
         path: ['SMTP_HOST'],
       })
     }
@@ -89,7 +91,8 @@ const environmentSchema = z
     ) {
       context.addIssue({
         code: 'custom',
-        message: '生产环境必须使用 SMTP 邮件传输，禁止输出验证码到控制台。',
+        message:
+          'Production requires SMTP transport; console verification codes are forbidden.',
         path: ['EMAIL_TRANSPORT'],
       })
     }
@@ -100,7 +103,8 @@ const environmentSchema = z
     ) {
       context.addIssue({
         code: 'custom',
-        message: '生产环境启用 Google 登录前必须配置完整 OAuth 凭据。',
+        message:
+          'Production Google sign-in requires complete OAuth credentials.',
         path: ['GOOGLE_CLIENT_ID'],
       })
     }
@@ -112,7 +116,8 @@ const environmentSchema = z
     ) {
       context.addIssue({
         code: 'custom',
-        message: '生产环境认证入口和认证页面必须使用 HTTPS。',
+        message:
+          'Production authentication endpoints and pages must use HTTPS.',
         path: ['BETTER_AUTH_URL'],
       })
     }
@@ -123,7 +128,7 @@ const environmentSchema = z
     ) {
       context.addIssue({
         code: 'custom',
-        message: '生产环境必须配置 DeepSeek API Key。',
+        message: 'Production requires DEEPSEEK_API_KEY.',
         path: ['DEEPSEEK_API_KEY'],
       })
     }
@@ -133,9 +138,13 @@ const parsedEnvironment = environmentSchema.safeParse(process.env)
 
 if (!parsedEnvironment.success) {
   const description = parsedEnvironment.error.issues
-    .map((issue) => `${issue.path.join('.') || '环境变量'}：${issue.message}`)
+    .map(
+      (issue) => `${issue.path.join('.') || 'environment'}: ${issue.message}`,
+    )
     .join('\n')
-  throw new Error(`认证服务配置无效：\n${description}`)
+  throw new Error(
+    `Invalid authentication server configuration:\n${description}`,
+  )
 }
 
 const environment = parsedEnvironment.data

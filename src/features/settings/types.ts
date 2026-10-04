@@ -1,3 +1,4 @@
+import type { AppearanceMode, InterfaceFontScale } from '../preferences/types'
 import type { AuthUser } from '@velin/contracts/auth-protocol'
 
 export type SettingsSection =
@@ -6,8 +7,6 @@ export type SettingsSection =
   | 'appearance'
   | 'chat'
   | 'about'
-export type AppearanceMode = 'system' | 'light' | 'dark'
-export type InterfaceFontScale = 'small' | 'default' | 'large'
 
 export type SettingsViewProps = {
   activeSection: SettingsSection

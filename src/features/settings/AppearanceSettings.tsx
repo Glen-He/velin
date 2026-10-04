@@ -1,4 +1,5 @@
-import type { AppearanceMode, SettingsViewProps } from './types'
+import type { SettingsViewProps } from './types'
+import type { AppearanceMode } from '../preferences/types'
 import {
   SettingsPanel,
   SettingsGroup,
@@ -94,8 +95,8 @@ export function AppearanceSettings({
   return (
     <SettingsPanel title="外观">
       <SettingsGroup title="主题">
-        <div className="settings-card">
-          <SettingsRow title="颜色模式">
+        <div className="panel-card">
+          <SettingsRow title="颜色模式" layout="rich">
             <AppearancePicker
               value={appearanceMode}
               onChange={onAppearanceModeChange}
@@ -104,8 +105,9 @@ export function AppearanceSettings({
         </div>
       </SettingsGroup>
       <SettingsGroup title="文字">
-        <div className="settings-card">
+        <div className="panel-card">
           <SettingsRow
+            layout="rich"
             title="界面字号"
             description="只调整排版大小，不改变侧边栏和按钮的固定几何。"
           >

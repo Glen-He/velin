@@ -10,6 +10,8 @@ import {
 import type { FormEvent, KeyboardEvent } from 'react'
 import type { Conversation, Message } from '@velin/contracts/chat'
 import Composer from './Composer'
+import { chatKeyAction } from './keyboard-policy'
+import { chatLimits } from '@velin/contracts/policy'
 
 type ChatViewProps = {
   conversation?: Conversation
@@ -122,23 +124,22 @@ function MessageBubble({
   }
 
   function handleEditKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.key === 'Escape') {
+    const action = chatKeyAction(
+      {
+        key: event.key,
+        isComposing: event.nativeEvent.isComposing || isComposingRef.current,
+        shiftKey: event.shiftKey,
+        metaKey: event.metaKey,
+        ctrlKey: event.ctrlKey,
+      },
+      sendOnEnter,
+    )
+    if (action === 'cancel') {
       event.preventDefault()
       cancelEditing()
       return
     }
-
-    if (event.nativeEvent.isComposing || isComposingRef.current) {
-      return
-    }
-
-    const shouldSend = sendOnEnter
-      ? event.key === 'Enter' && !event.shiftKey
-      : event.key === 'Enter' && (event.metaKey || event.ctrlKey)
-
-    if (!shouldSend) {
-      return
-    }
+    if (action !== 'submit') return
 
     event.preventDefault()
     submitEdit()
@@ -153,7 +154,7 @@ function MessageBubble({
           <form className="message-editor" onSubmit={handleEditSubmit}>
             <textarea
               ref={editorRef}
-              maxLength={8_000}
+              maxLength={chatLimits.messageCharacters}
               aria-label="编辑消息"
               rows={1}
               value={editValue}
@@ -217,7 +218,7 @@ function MessageBubble({
               type="button"
               disabled={!message.content}
               aria-label={copyFeedback > 0 ? '已复制' : '复制消息'}
-              title={copyFeedback > 0 ? '已复制' : '复制'}
+              title="复制"
               onClick={() => void copyMessage()}
             >
               {copyFeedback > 0 ? (
@@ -312,13 +313,20 @@ function ChatView({
 
     shouldFollowMessagesRef.current = true
     updateScrollPosition(false)
-    messageList.scrollTo({
-      top: messageList.scrollHeight,
-      behavior: 'smooth',
-    })
-
     if (scrollAnimationTimerRef.current !== null) {
       window.clearTimeout(scrollAnimationTimerRef.current)
+      scrollAnimationTimerRef.current = null
+    }
+    const reducedMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches
+    messageList.scrollTo({
+      top: messageList.scrollHeight,
+      behavior: reducedMotion ? 'instant' : 'smooth',
+    })
+    if (reducedMotion) {
+      measureScrollPosition(messageList)
+      return
     }
 
     scrollAnimationTimerRef.current = window.setTimeout(() => {
@@ -354,6 +362,10 @@ function ChatView({
   useLayoutEffect(() => {
     const messageList = messageListRef.current
 
+    if (scrollAnimationTimerRef.current !== null) {
+      window.clearTimeout(scrollAnimationTimerRef.current)
+      scrollAnimationTimerRef.current = null
+    }
     shouldFollowMessagesRef.current = true
 
     if (messageList) {

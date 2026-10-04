@@ -1,3 +1,4 @@
+import { Button } from '@velin/ui/Button.tsx'
 import { useEffect, useState } from 'react'
 
 export function AuthorizationCodePage({
@@ -42,13 +43,15 @@ export function AuthorizationCodePage({
             : '若 Velin 没有自动打开，请复制授权码并在应用中粘贴。'}
         </p>
         <code className="auth-code-value">{code}</code>
-        <button
-          className="primary-button"
+        <Button
+          variant="primary"
+          size="regular"
+          stretch
           type="button"
           onClick={() => void copyCode()}
         >
           {isCopied ? '已复制' : '复制授权码'}
-        </button>
+        </Button>
         <p
           className="auth-code-copy-feedback"
           role={copyError ? 'alert' : undefined}

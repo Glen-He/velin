@@ -8,14 +8,14 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
 
-    /* Bundler mode */
+    /* 模块解析与运行环境。 */
     "module": "nodenext",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "noEmit": true,
 
-    /* Linting */
+    /* 静态检查。 */
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,

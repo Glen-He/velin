@@ -20,7 +20,7 @@ const passkeyBody = verificationIntentSchema.safeExtend({
   response: z.record(z.string(), z.unknown()),
 })
 
-// The consuming verify-email endpoint owns code validation and atomic deletion.
+// 由会原子消费验证码的 verify-email 端点执行校验和删除。
 async function verifyCode(
   input: z.infer<typeof stepUpBody>,
   cookie: string,
@@ -219,8 +219,8 @@ export function registerSecurityRoutes(app: Hono) {
     const verified =
       payload && isRecord(payload.session) ? payload.session : null
     const user = payload && isRecord(payload.user) ? payload.user : null
-    // Upstream authentication creates a temporary login session. Dispose it;
-    // step-up never switches accounts or replaces the existing session cookie.
+    // 上游认证会创建临时登录会话，验证完成后立即销毁；
+    // 敏感操作确认不能切换账号或替换当前会话 Cookie。
     if (verified && typeof verified.token === 'string') {
       const authContext = await auth.$context
       await authContext.internalAdapter.deleteSession(verified.token)

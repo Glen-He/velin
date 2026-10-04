@@ -1,0 +1,180 @@
+/* 默认外高 = N × 行高 + (N − 1) × 分隔线 + 2 × 外框；大字和富内容可自然增高。 */
+.panel-card {
+  overflow: hidden;
+  border: var(--line-width-panel) solid var(--color-border-subtle);
+  border-radius: var(--surface-radius-card);
+  corner-shape: var(--surface-corner-shape);
+  background: var(--color-surface);
+}
+.panel-row {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: var(--panel-row-height);
+  align-items: center;
+  gap: var(--space-7);
+  padding: var(--panel-row-padding) var(--panel-row-gutter);
+}
+.panel-card > .panel-row + .panel-row {
+  margin-top: var(--line-width-divider);
+}
+.panel-card > .panel-row + .panel-row::before {
+  content: '';
+  position: absolute;
+  top: calc(-1 * var(--line-width-divider));
+  inset-inline: var(--panel-row-gutter);
+  height: var(--line-width-divider);
+  background: var(--color-border-subtle);
+  pointer-events: none;
+}
+.panel-group + .panel-group {
+  margin-top: var(--space-11);
+}
+.panel-group-title {
+  margin: 0 0 var(--space-5) var(--space-2);
+  color: var(--color-secondary);
+  font-size: var(--type-control);
+  font-weight: var(--weight-semibold);
+  line-height: var(--line-height-tight);
+}
+.panel-row-copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.panel-row-title {
+  font-size: var(--type-body);
+  font-weight: var(--weight-medium);
+  line-height: 1.25;
+}
+.panel-row-description {
+  color: var(--color-secondary);
+  font-size: var(--type-caption);
+  line-height: 1.4;
+}
+.panel-row-control {
+  display: flex;
+  flex: none;
+  align-items: center;
+}
+.panel-row-control .pill-button {
+  flex: none;
+}
+.account-identity-row .panel-row-title {
+  font-weight: var(--weight-semibold);
+}
+.account-avatar-edit {
+  position: relative;
+  display: grid;
+  width: var(--panel-avatar-size);
+  height: var(--panel-avatar-size);
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-circle);
+  corner-shape: round;
+  background: var(--color-control);
+  color: var(--color-ink);
+  place-items: center;
+  font: inherit;
+  font-size: var(--type-subtitle);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+.account-avatar-edit > img,
+.account-avatar-edit > .account-avatar-image {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  corner-shape: round;
+  object-fit: cover;
+  font: inherit;
+  background: transparent;
+  color: inherit;
+}
+.account-avatar-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: inherit;
+  background: var(--color-avatar-overlay);
+  color: var(--color-on-accent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-duration-feedback)
+    var(--motion-ease-feedback);
+}
+.account-avatar-overlay svg {
+  width: var(--icon-xs);
+  height: var(--icon-xs);
+}
+@media (hover: hover) {
+  .account-avatar-edit:hover .account-avatar-overlay {
+    opacity: 1;
+  }
+}
+.account-avatar-edit:focus-visible .account-avatar-overlay {
+  opacity: 1;
+}
+.panel-icon-action {
+  display: grid;
+  flex: none;
+  width: var(--control-icon-compact);
+  height: var(--control-icon-compact);
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--surface-radius-control);
+  corner-shape: var(--surface-corner-shape);
+  background: transparent;
+  color: var(--color-secondary);
+  cursor: pointer;
+  transition: background-color var(--motion-duration-feedback)
+    var(--motion-ease-feedback);
+}
+.panel-icon-action svg {
+  width: var(--icon-xs);
+  height: var(--icon-xs);
+}
+@media (hover: hover) {
+  .panel-icon-action:hover:not(:disabled) {
+    background: var(--color-control-hover);
+    color: var(--color-ink);
+  }
+}
+.panel-icon-action:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+.account-avatar-edit:focus-visible,
+.panel-icon-action:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+@media (pointer: coarse) {
+  .panel-icon-action {
+    width: var(--control-touch-target);
+    height: var(--control-touch-target);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .account-avatar-overlay,
+  .panel-icon-action {
+    transition: none;
+  }
+}
+
+.panel-icon-action[data-tone='danger'] {
+  color: var(--color-danger-text);
+}
+@media (hover: hover) {
+  .panel-icon-action[data-tone='danger']:hover:not(:disabled) {
+    background: var(--color-danger-soft);
+  }
+}
+.panel-icon-action:disabled {
+  color: var(--color-secondary);
+}

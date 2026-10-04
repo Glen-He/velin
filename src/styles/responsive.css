@@ -1,9 +1,3 @@
-@media (max-width: 960px) {
-  .message-bubble {
-    max-width: 88%;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

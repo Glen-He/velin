@@ -1,36 +1,19 @@
 import { useEffect, useState } from 'react'
 import { UserRound } from 'lucide-react'
+import { accountInitial, ownedAvatarPath } from '@velin/contracts/avatar'
+import { createAvatarCache } from './avatar-cache'
 import type { ReactNode } from 'react'
 import type { AuthUser } from '@velin/contracts/auth-protocol'
 
-// 头像字节由 Main 代取后转为 blob: URL；同一地址在会话内只取一次，
-// 供侧边栏、设置页与对话框共享。加载失败时回退显示首字母。
-const objectUrlCache = new Map<string, Promise<string>>()
-
-function loadAvatarObjectUrl(imageUrl: string): Promise<string> {
-  const cached = objectUrlCache.get(imageUrl)
-
-  if (cached) {
-    return cached
-  }
-
-  const pending = window.velin.auth
-    .fetchAvatarImage(imageUrl)
-    .then((bytes) =>
-      URL.createObjectURL(new Blob([bytes], { type: 'image/jpeg' })),
-    )
-    .catch((cause) => {
-      objectUrlCache.delete(imageUrl)
-      throw cause
-    })
-
-  objectUrlCache.set(imageUrl, pending)
-  return pending
-}
-
-function getAccountInitial(user: AuthUser) {
-  return (user.name.trim()[0] ?? user.email[0] ?? 'V').toUpperCase()
-}
+// 订阅者共享请求与 Blob；最后一个订阅者退出后释放，账号之间不共享缓存。
+const avatarCache = createAvatarCache({
+  load: (source) => window.velin.auth.fetchAvatarImage(source),
+  create: (bytes) =>
+    URL.createObjectURL(
+      new Blob([new Uint8Array(bytes)], { type: 'image/jpeg' }),
+    ),
+  revoke: (url) => URL.revokeObjectURL(url),
+})
 
 export function UserAvatar({
   user,
@@ -41,23 +24,26 @@ export function UserAvatar({
   className?: string
   children?: ReactNode
 }) {
-  const imageUrl = user?.image ?? null
+  const source = user?.image ?? null
+  const imageUrl = source && ownedAvatarPath(source) ? source : null
+  const key = user && imageUrl ? JSON.stringify([user.id, imageUrl]) : null
   const [resolved, setResolved] = useState<{
-    source: string
+    key: string
     objectUrl: string
   } | null>(null)
 
   useEffect(() => {
-    if (!imageUrl) {
+    if (!imageUrl || !key) {
       return
     }
 
     let active = true
 
-    void loadAvatarObjectUrl(imageUrl)
+    const retained = avatarCache.acquire(key, imageUrl)
+    void retained.pending
       .then((objectUrl) => {
-        if (active) {
-          setResolved({ source: imageUrl, objectUrl })
+        if (active && objectUrl) {
+          setResolved({ key, objectUrl })
         }
       })
       .catch(() => {
@@ -66,20 +52,21 @@ export function UserAvatar({
 
     return () => {
       active = false
+      retained.release()
     }
-  }, [imageUrl])
+  }, [imageUrl, key])
 
   const activeObjectUrl =
-    resolved && resolved.source === imageUrl ? resolved.objectUrl : null
+    resolved && resolved.key === key ? resolved.objectUrl : null
 
   const classes = className ? `account-avatar ${className}` : 'account-avatar'
 
   return (
     <span className={classes} aria-hidden="true">
       {user && activeObjectUrl ? (
-        <img src={activeObjectUrl} alt="" />
+        <img src={activeObjectUrl} alt="" onError={() => setResolved(null)} />
       ) : user ? (
-        getAccountInitial(user)
+        accountInitial(user.name, user.email)
       ) : (
         <UserRound />
       )}

@@ -30,6 +30,7 @@ function SettingsView({
   if (activeSection === 'account') {
     content = (
       <AccountSettings
+        key={authUser?.id ?? 'signed-out'}
         authUser={authUser}
         onUploadAvatar={onUploadAvatar}
         onChangeDisplayName={onChangeDisplayName}
@@ -67,7 +68,9 @@ function SettingsView({
 
   return (
     <main className="settings-page">
-      <section className="settings-content">{content}</section>
+      <section className="settings-content" key={activeSection}>
+        {content}
+      </section>
     </main>
   )
 }

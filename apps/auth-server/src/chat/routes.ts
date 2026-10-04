@@ -4,6 +4,7 @@ import OpenAI, { APIConnectionError, APIError } from 'openai'
 import { chatRequestSchema } from '@velin/contracts/chat-validation'
 import { auth } from '../auth.js'
 import { config } from '../config.js'
+import { logger } from '../logging.js'
 import {
   finishChatRequest,
   reserveChatRequest,
@@ -54,8 +55,8 @@ function upstreamMessage(error: unknown) {
 
 export function registerChatRoutes(app: Hono) {
   app.post('/api/chat/stream', async (context) => {
-    // This API is called by Electron Main, which holds the session cookie.
-    // Refuse browser-origin requests so a page cannot spend the server key.
+    // 此 API 由持有会话 Cookie 的 Electron Main 调用。
+    // 拒绝浏览器 Origin，防止页面消耗服务端模型密钥。
     if (
       context.req.header('origin') ||
       context.req.header('content-type')?.split(';', 1)[0].trim() !==
@@ -86,7 +87,7 @@ export function registerChatRoutes(app: Hono) {
     try {
       limit = await reserveChatRequest(session.user.id, request.requestId)
     } catch (error) {
-      console.error('对话用量检查失败。', error)
+      logger.error('chat.quota_failed', { error })
       return context.json({ message: '暂时无法开始对话，请稍后重试。' }, 503)
     }
 
@@ -197,7 +198,7 @@ export function registerChatRoutes(app: Hono) {
             ? { inputTokens, outputTokens }
             : undefined,
         ).catch((error: unknown) => {
-          console.error('记录对话用量失败。', error)
+          logger.error('chat.usage_failed', { error })
         })
       }
     })

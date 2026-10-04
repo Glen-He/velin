@@ -9,8 +9,8 @@ import { createSendSlots } from './send-slot-store'
 
 const cooldownSeconds = import.meta.env.DEV ? 5 : 60
 
-// Recipient changes select a different slot. Returning to an earlier address
-// preserves its cooldown; late delivery cannot label the new address as sent.
+// 收件地址变更时选择不同发送槽；返回旧地址仍保留冷却，
+// 迟到投递结果不能把新地址标记为已发送。
 export function useSendSlot(recipient: string, seconds = cooldownSeconds) {
   const [store] = useState(() => createSendSlots(seconds * 1000))
   const selectedRecipient = useRef(recipient)

@@ -3,7 +3,8 @@ import type { FormEvent } from 'react'
 import { flushSync } from 'react-dom'
 import { authClient } from '../auth-client'
 import { authenticatePasskey } from './passkey'
-import { errorMessage, newPasswordError } from '../shared'
+import { errorMessage } from '@velin/contracts/error-copy'
+import { newPasswordError } from '@velin/contracts/policy'
 
 type AuthMode =
   | 'password'
@@ -43,8 +44,8 @@ function isElectronAuthorization(query: Record<string, string>) {
 }
 
 function encodeElectronAuthorizationCode(identifier: string, state: string) {
-  // The Electron client expects the transfer identifier and its PKCE state
-  // together in a base64url encoded token when the user pastes a code.
+  // 用户粘贴的授权码需同时包含 Electron 的 transfer 标识和 PKCE 状态，
+  // 按协议编码为 base64url token。
   return btoa(JSON.stringify({ identifier, state }))
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
@@ -79,7 +80,7 @@ export function useSignInFlow() {
   )
   const transferStartedRef = useRef(false)
 
-  // 已有会话时直接进入账号中心；桌面端授权流程（isElectronFlow）仍停在当前页完成交接。
+  // 已有会话时直接进入账号；桌面端授权流程（isElectronFlow）仍停在当前页完成交接。
   useEffect(() => {
     if (session && !isElectronFlow) {
       window.location.replace('/account')
@@ -132,7 +133,7 @@ export function useSignInFlow() {
         }
       })
       .catch(() => {
-        /* Conditional autofill is optional; explicit login stays available. */
+        /* 条件自动填充失败时，仍保留显式登录入口。 */
       })
     return () => controller.abort()
   }, [capabilities.passkey, electronQuery, mode, refetchSession, session])
@@ -489,9 +490,7 @@ export function useSignInFlow() {
       })
       if (result.error) throw new Error(errorMessage(result.error))
     } catch (cause) {
-      setError(
-        cause instanceof Error ? cause.message : '无法发起 Google 登录。',
-      )
+      setError(errorMessage(cause, '无法发起 Google 登录。'))
     } finally {
       setIsSubmitting(false)
     }

@@ -1,7 +1,9 @@
+import { ButtonLink, Button } from '@velin/ui/Button.tsx'
+import { TruncatedText } from '@velin/ui/TruncatedText.tsx'
 import { ChevronLeft } from 'lucide-react'
 import { useState } from 'react'
 import { authClient } from '../auth-client'
-import { LoadingState } from '../shared-ui'
+import { LoadingState } from '../LoadingState'
 import { useGatedActions } from './gated-actions'
 import { usePasskeyList } from './passkey-list'
 import type { DialogOperation } from './security-api'
@@ -37,10 +39,11 @@ export function SecurityPage() {
     passkeys,
     error: passkeyError,
     refresh: refreshPasskeys,
-  } = usePasskeyList()
+  } = usePasskeyList(session?.user.id ?? null)
   const [feedback, setFeedback] = useState<Feedback | null>(null)
 
-  const { open, dialog } = useGatedActions({
+  const { open, dialog, opening } = useGatedActions({
+    userId: session?.user.id ?? null,
     email: session?.user.email ?? '',
     hasPasskey: (passkeys?.length ?? 0) > 0,
     hasTwoFactor: Boolean(session?.user.twoFactorEnabled),
@@ -65,9 +68,9 @@ export function SecurityPage() {
         <section className="auth-content account-content">
           <h1>需要先登录</h1>
           <p>登录后才能管理通行密钥和双重认证。</p>
-          <a className="primary-button link-button" href="/sign-in">
+          <ButtonLink variant="primary" size="regular" stretch href="/sign-in">
             前往登录
-          </a>
+          </ButtonLink>
         </section>
       </main>
     )
@@ -79,97 +82,108 @@ export function SecurityPage() {
     <main className="security-page">
       <header className="security-header">
         <div className="security-header-slot">
-          <a className="security-back-button" href="/account">
+          <a
+            className="text-action security-back-button"
+            data-tone="neutral"
+            href="/account"
+          >
             <ChevronLeft aria-hidden="true" />
-            账号中心
+            账号
           </a>
         </div>
         <h1>登录与安全</h1>
       </header>
 
-      <section className="account-section">
-        <h2 className="account-section-title">登录凭据</h2>
-        <div className="session-group">
-          <div className="session-card">
+      <section className="panel-group">
+        <h2 className="panel-group-title">登录凭据</h2>
+        <div className="panel-card">
+          <div className="panel-row">
             <div className="session-copy">
-              <div className="session-name">登录邮箱</div>
-              <div className="session-meta">{session.user.email}</div>
+              <TruncatedText className="session-name">登录邮箱</TruncatedText>
+              <TruncatedText className="session-meta">
+                {session.user.email}
+              </TruncatedText>
             </div>
-            <button
-              className="security-action is-narrow"
+            <Button
+              variant="secondary"
               type="button"
+              disabled={opening !== null}
+              sizeLabel="修改"
               onClick={() => void open({ operation: 'changeEmail' })}
             >
-              修改
-            </button>
+              {opening?.operation === 'changeEmail' ? '读取中…' : '修改'}
+            </Button>
           </div>
 
-          <div className="session-card">
+          <div className="panel-row">
             <div className="session-copy">
-              <div className="session-name">密码</div>
-              <div className="session-meta">已设置</div>
+              <TruncatedText className="session-name">密码</TruncatedText>
+              <TruncatedText className="session-meta">已设置</TruncatedText>
             </div>
-            <button
-              className="security-action is-narrow"
+            <Button
+              variant="secondary"
               type="button"
+              disabled={opening !== null}
+              sizeLabel="修改"
               onClick={() => void open({ operation: 'changePassword' })}
             >
-              修改
-            </button>
+              {opening?.operation === 'changePassword' ? '读取中…' : '修改'}
+            </Button>
           </div>
 
-          <div className="session-card">
+          <div className="panel-row">
             <div className="session-copy">
-              <div className="session-name">通行密钥</div>
-              <div className="session-meta">
+              <TruncatedText className="session-name">通行密钥</TruncatedText>
+              <TruncatedText className="session-meta">
                 {passkeyError
                   ? '读取失败'
                   : passkeyMeta(passkeys?.length ?? null)}
-              </div>
+              </TruncatedText>
             </div>
             {passkeys && passkeys.length > 0 ? (
-              <a
-                className="security-action is-narrow link-button"
-                href="/security/passkeys"
-              >
+              <ButtonLink variant="secondary" href="/security/passkeys">
                 管理
-              </a>
+              </ButtonLink>
             ) : (
-              <button
-                className="security-action is-narrow"
+              <Button
+                variant="secondary"
                 type="button"
+                disabled={opening !== null || passkeys === null}
+                sizeLabel="添加"
                 onClick={() => void open({ operation: 'addPasskey' })}
               >
-                添加
-              </button>
+                {opening?.operation === 'addPasskey' ? '读取中…' : '添加'}
+              </Button>
             )}
           </div>
         </div>
         <SectionFeedback feedback={feedback} scope="credentials" />
       </section>
 
-      <section className="account-section">
-        <h2 className="account-section-title">账户保护</h2>
-        <div className="session-group">
-          <div className="session-card">
+      <section className="panel-group">
+        <h2 className="panel-group-title">账号保护</h2>
+        <div className="panel-card">
+          <div className="panel-row">
             <div className="session-copy">
               <div className="session-name">
-                验证器动态码
+                <TruncatedText>验证器动态码</TruncatedText>
                 <span
                   className={`security-state${hasTwoFactor ? ' is-enabled' : ''}`}
                 >
                   {hasTwoFactor ? '已开启' : '未开启'}
                 </span>
               </div>
-              <div className="session-meta">
+              <TruncatedText className="session-meta">
                 {hasTwoFactor
                   ? '密码登录时需要再输入 6 位动态码。'
                   : '为密码登录增加第二层验证。'}
-              </div>
+              </TruncatedText>
             </div>
-            <button
-              className="security-action is-narrow"
+            <Button
+              variant="secondary"
               type="button"
+              disabled={opening !== null}
+              sizeLabel={hasTwoFactor ? '关闭' : '开启'}
               onClick={() =>
                 void open({
                   operation: hasTwoFactor
@@ -178,8 +192,13 @@ export function SecurityPage() {
                 })
               }
             >
-              {hasTwoFactor ? '关闭' : '开启'}
-            </button>
+              {opening?.operation ===
+              (hasTwoFactor ? 'disableTwoFactor' : 'enableTwoFactor')
+                ? '读取中…'
+                : hasTwoFactor
+                  ? '关闭'
+                  : '开启'}
+            </Button>
           </div>
         </div>
         <SectionFeedback feedback={feedback} scope="protection" />
@@ -189,7 +208,7 @@ export function SecurityPage() {
         <p className="error-message" role="alert">
           {passkeyError}{' '}
           <button
-            className="text-button"
+            className="text-action"
             type="button"
             onClick={() => void refreshPasskeys()}
           >

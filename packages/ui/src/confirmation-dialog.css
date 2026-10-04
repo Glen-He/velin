@@ -1,0 +1,72 @@
+.confirmation-scrim {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  place-items: center;
+  min-height: 100%;
+  padding: var(--layout-modal-gutter);
+  background: var(--color-scrim);
+  animation: scrim-reveal var(--motion-duration-overlay)
+    var(--motion-ease-feedback);
+}
+.confirmation-card {
+  width: min(100%, var(--dialog-width-edit));
+  min-width: 0;
+  padding: var(--space-9);
+  border-radius: var(--surface-radius-card);
+  corner-shape: var(--surface-corner-shape);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: var(--shadow-dialog);
+  animation: surface-reveal var(--motion-duration-overlay)
+    var(--motion-ease-standard);
+}
+.confirmation-title {
+  margin: 0 0 var(--space-7);
+  font-size: var(--type-subtitle);
+  font-weight: var(--weight-semibold);
+  line-height: var(--line-height-tight);
+}
+.confirmation-description {
+  margin: 0;
+  font-size: var(--type-body);
+  line-height: var(--line-height-body);
+  overflow-wrap: anywhere;
+}
+.confirmation-feedback {
+  min-height: 1.2em;
+  margin: var(--space-3) 0 0;
+  color: var(--color-secondary);
+  font-size: var(--type-caption);
+  line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
+}
+.confirmation-feedback[role='alert'] {
+  color: var(--color-danger-text);
+}
+.confirmation-actions {
+  margin-top: var(--space-7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confirmation-scrim,
+  .confirmation-card {
+    animation: none;
+  }
+}
+
+.account-name-input {
+  width: 100%;
+  height: var(--control-field-height);
+  padding-inline: var(--space-6);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--surface-radius-field);
+  corner-shape: var(--surface-corner-shape);
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: var(--type-input);
+}
+.account-name-input:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}

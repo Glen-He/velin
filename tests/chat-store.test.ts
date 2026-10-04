@@ -131,6 +131,49 @@ test('failed IPC dispatch restores state so Composer can retain its draft', () =
   assert.equal(store.send('x'.repeat(8001)), false)
 })
 
+test('failed cancellation retains local invalidation and reports undelivered stop', () => {
+  const sent: SendMessageRequest[] = []
+  const store = createChatStore({
+    send: (request) => {
+      sent.push(request)
+    },
+    stop: () => {
+      throw new Error('transport unavailable')
+    },
+  })
+  store.send('draft')
+  const request = sent[0]
+  assert.doesNotThrow(() => store.stop(request.conversationId))
+  store.receive({ ...request, type: 'message-start', messageId: 'late' })
+  assert.equal(store.getSnapshot().conversations[0].messages.length, 1)
+  assert.deepEqual(store.getSnapshot().requests, {})
+  assert.match(store.getSnapshot().errors[request.conversationId]!, /未送达/)
+  assert.doesNotThrow(() => store.remove(request.conversationId))
+  assert.deepEqual(store.getSnapshot().conversations, [])
+})
+
+test('account cleanup attempts every cancellation even when first IPC fails', () => {
+  const stopped: StopMessageRequest[] = []
+  const store = createChatStore({
+    send: () => {},
+    stop: (request) => {
+      stopped.push(request)
+      if (stopped.length === 1) throw new Error('transport unavailable')
+    },
+  })
+  store.send('first')
+  store.select(null)
+  store.send('second')
+  assert.doesNotThrow(() => store.reset())
+  assert.equal(stopped.length, 2)
+  assert.deepEqual(store.getSnapshot(), {
+    conversations: [],
+    activeConversationId: null,
+    requests: {},
+    errors: {},
+  })
+})
+
 test('prompt budget keeps newest nonempty content within the server limits', () => {
   const prompt = promptMessages(
     Array.from({ length: 40 }, (_, index) => ({

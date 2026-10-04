@@ -9,6 +9,7 @@ import ConversationSidebar from './features/conversations/ConversationSidebar'
 import SettingsView from './features/settings/SettingsView'
 import { SettingsNavigation } from './features/settings/SettingsNavigation'
 import AuthView from './features/auth/AuthView'
+import { ConfirmationDialog } from '@velin/ui/ConfirmationDialog.tsx'
 import type { AuthUser } from '@velin/contracts/auth-protocol'
 import type { AuthFlow, AuthIntent } from '@velin/contracts/auth-protocol'
 import type { SettingsSection } from './features/settings/types'
@@ -35,6 +36,7 @@ function App() {
     minimumSidebarWidth,
     maximumSidebarWidth,
   } = useSidebar()
+  const [signOutDialogOpen, setSignOutDialogOpen] = useState(false)
   const [appView, setAppView] = useState<AppView>('chat')
   const [chatScope, setChatScope] = useState(0)
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
@@ -71,6 +73,7 @@ function App() {
     const applyAuthUser = (user: AuthUser | null) => {
       const previousUserId = authenticatedUserIdRef.current
       if (previousUserId && previousUserId !== user?.id) {
+        setSignOutDialogOpen(false)
         chat.reset()
         setChatScope((value) => value + 1)
       }
@@ -134,7 +137,7 @@ function App() {
       }
 
       if (action === 'sign-out') {
-        void handleSignOut()
+        if (authenticatedUserIdRef.current) setSignOutDialogOpen(true)
         return
       }
 
@@ -169,7 +172,7 @@ function App() {
       setIsAuthViewOpen(false)
       setAppView('chat')
     } catch {
-      setAuthError('退出登录失败，请检查网络后重试。')
+      throw new Error('退出登录失败，请检查网络后重试。')
     }
   }
 
@@ -246,6 +249,19 @@ function App() {
   return (
     <>
       {authView}
+      {signOutDialogOpen && authUser ? (
+        <ConfirmationDialog
+          key={authUser.id}
+          title="退出登录"
+          confirmLabel="退出登录"
+          pendingLabel="退出中…"
+          failureMessage="退出登录失败，请检查网络后重试。"
+          onClose={() => setSignOutDialogOpen(false)}
+          onConfirm={handleSignOut}
+        >
+          确认要退出当前账号吗？当前登录会话将被移除。
+        </ConfirmationDialog>
+      ) : null}
       <div
         hidden={isAuthViewOpen}
         inert={isAuthViewOpen}
@@ -297,7 +313,7 @@ function App() {
                 onDeleteConversation={handleDeleteConversation}
                 onOpenSettings={() => setAppView('settings')}
                 onSignIn={() => openAuthView()}
-                onSignOut={() => void handleSignOut()}
+                onSignOut={() => setSignOutDialogOpen(true)}
                 onReorderConversation={handleReorderConversation}
                 onSelectConversation={setActiveConversationId}
               />
@@ -379,7 +395,7 @@ function App() {
                 }
                 onSignIn={() => openAuthView()}
                 onSendOnEnterChange={setSendOnEnter}
-                onSignOut={() => void handleSignOut()}
+                onSignOut={() => setSignOutDialogOpen(true)}
               />
             </div>
           </div>

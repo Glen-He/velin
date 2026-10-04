@@ -16,12 +16,14 @@ export type GatedEntry = {
 
 // 敏感操作入口：登录与安全总览页和通行密钥管理页共用同一套流程。
 export function useGatedActions({
+  userId,
   email,
   hasPasskey,
   hasTwoFactor,
   onOpened,
   onCompleted,
 }: {
+  userId: string | null
   email: string
   hasPasskey: boolean
   hasTwoFactor: boolean
@@ -31,27 +33,54 @@ export function useGatedActions({
 }) {
   const [security, setSecurity] = useState<SecurityState | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const sequence = useRef(0)
-  useEffect(
-    () => () => {
-      sequence.current++
-    },
-    [],
-  )
+  const pendingRequest = useRef<AbortSignal | null>(null)
+  const scopeController = useRef<AbortController | null>(null)
+  const [scope, setScope] = useState(userId)
+  const [opening, setOpening] = useState<GatedEntry | null>(null)
   const [entry, setEntry] = useState<GatedEntry | null>(null)
+  // 账号变化立即重置所属界面；外部请求由下方的账号生命周期取消。
+  if (scope !== userId) {
+    setScope(userId)
+    setSecurity(null)
+    setLoadError(null)
+    setOpening(null)
+    setEntry(null)
+  }
+  useEffect(() => {
+    const controller = new AbortController()
+    scopeController.current = controller
+    return () => {
+      controller.abort()
+    }
+  }, [userId])
 
-  // Refresh operation policy when opening; failure remains visible and does not imply permission.
+  // 打开时刷新操作策略；读取失败必须可见，不能等同于允许操作。
   async function open(next: GatedEntry) {
+    const signal = scopeController.current?.signal
+    if (
+      !userId ||
+      !signal ||
+      signal.aborted ||
+      (pendingRequest.current && !pendingRequest.current.aborted)
+    )
+      return
+    pendingRequest.current = signal
+    setOpening(next)
     onOpened?.()
-    const request = ++sequence.current
     setLoadError(null)
     try {
-      const policy = await fetchSecurityState()
-      if (request !== sequence.current) return
+      const policy = await fetchSecurityState(signal)
+      if (signal.aborted || pendingRequest.current !== signal) return
       setSecurity(policy)
       setEntry(next)
     } catch (cause) {
-      if (request === sequence.current) setLoadError(actionErrorMessage(cause))
+      if (!signal.aborted && pendingRequest.current === signal)
+        setLoadError(actionErrorMessage(cause))
+    } finally {
+      if (!signal.aborted && pendingRequest.current === signal) {
+        pendingRequest.current = null
+        setOpening(null)
+      }
     }
   }
 
@@ -82,5 +111,5 @@ export function useGatedActions({
     </p>
   ) : null
 
-  return { open, dialog }
+  return { open, dialog, opening }
 }

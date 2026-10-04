@@ -1,16 +1,17 @@
 import { avatarLimits } from '@velin/contracts/policy'
+import { isAvatarJpeg } from '@velin/contracts/avatar'
+import { createHash } from 'node:crypto'
 import type { Hono } from 'hono'
 import { auth } from './auth.js'
 import { config } from './config.js'
 import { databasePool } from './database.js'
-
-const jpegSignature = [0xff, 0xd8, 0xff] as const
+import { logger } from './logging.js'
 
 // Better Auth 的用户 ID 是 32 位随机串，不是 UUID。
 const authUserIdPattern = /^[A-Za-z0-9_-]{16,64}$/
 
 // 头像由客户端统一转成 JPEG 后上传；服务端只接受声明与实际字节一致的 JPEG，
-// 读取端按用户 ID 提供带版本的不可变缓存 URL。
+// 图片与用户引用在同一条 SQL 中保存；读取端按内容 ETag 重新验证缓存。
 export function registerAvatarRoutes(app: Hono) {
   app.post('/api/avatars', async (context) => {
     // 浏览器请求会带 Origin；Electron Main 不会。带 Origin 时必须来自可信前端。
@@ -51,10 +52,7 @@ export function registerAvatarRoutes(app: Hono) {
 
     const bytes = Buffer.from(await context.req.arrayBuffer())
     const hasJpegSignature =
-      bytes.length === declaredLength &&
-      bytes.length <= avatarLimits.uploadBytes &&
-      bytes.length > jpegSignature.length &&
-      jpegSignature.every((value, index) => bytes[index] === value)
+      bytes.length === declaredLength && isAvatarJpeg(bytes)
 
     if (!hasJpegSignature) {
       return context.json(
@@ -65,24 +63,29 @@ export function registerAvatarRoutes(app: Hono) {
 
     try {
       const userId = session.user.id
-      await databasePool.query(
-        `insert into "user_avatar" ("userId", "contentType", "data")
-         values ($1, 'image/jpeg', $2)
-         on conflict ("userId") do update
-           set "contentType" = excluded."contentType",
-               "data" = excluded."data",
-               "updatedAt" = now()`,
+      const result = await databasePool.query<{ image: string }>(
+        `with saved_avatar as (
+           insert into "user_avatar" ("userId", "contentType", "data")
+           values ($1, 'image/jpeg', $2)
+           on conflict ("userId") do update
+             set "contentType" = excluded."contentType",
+                 "data" = excluded."data",
+                 "updatedAt" = now()
+           returning "userId", "updatedAt"
+         )
+         update "user" as account
+         set "image" = '/api/avatars/' || avatar."userId" || '?v=' ||
+             floor(extract(epoch from avatar."updatedAt") * 1000)::bigint::text,
+             "updatedAt" = now()
+         from saved_avatar as avatar
+         where account."id" = avatar."userId"
+         returning account."image"`,
         [userId, bytes],
       )
-      const imageValue = `${config.authBaseUrl}/api/avatars/${userId}?v=${Date.now()}`
-      await databasePool.query(
-        `update "user" set "image" = $2, "updatedAt" = now() where "id" = $1`,
-        [userId, imageValue],
-      )
 
-      return context.json({ image: imageValue })
+      return context.json({ image: result.rows[0].image })
     } catch (error) {
-      console.error('头像保存失败。', error)
+      logger.error('avatar.save_failed', { error })
       return context.json({ message: '头像保存失败，请稍后重试。' }, 500)
     }
   })
@@ -109,13 +112,19 @@ export function registerAvatarRoutes(app: Hono) {
 
       const row = result.rows[0]
       const bytes = new Uint8Array(row.data)
-
-      return context.body(bytes.buffer as ArrayBuffer, 200, {
+      const etag = `"${createHash('sha256').update(bytes).digest('hex')}"`
+      const headers = {
         'Content-Type': row.contentType,
-        'Cache-Control': 'public, max-age=31536000, immutable',
-      })
+        'Cache-Control': 'public, max-age=0, must-revalidate',
+        ETag: etag,
+      }
+      if (context.req.header('if-none-match') === etag) {
+        return context.body(null, 304, headers)
+      }
+
+      return context.body(bytes.buffer as ArrayBuffer, 200, headers)
     } catch (error) {
-      console.error('头像读取失败。', error)
+      logger.error('avatar.read_failed', { error })
       return context.json({ message: '头像读取失败，请稍后重试。' }, 500)
     }
   })

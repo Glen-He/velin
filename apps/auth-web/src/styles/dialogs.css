@@ -1,74 +1,43 @@
-/* 网页端弹层（头像裁剪） */
-
 .web-modal-scrim {
   position: fixed;
   inset: 0;
   z-index: 100;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   place-items: center;
-  padding: var(--space-10);
+  padding: var(--layout-modal-gutter);
   background: var(--color-scrim);
-  animation: web-modal-fade var(--motion-duration-content) ease;
+  animation: scrim-reveal var(--motion-duration-overlay)
+    var(--motion-ease-feedback);
 }
 
 .web-modal {
-  width: var(--web-dialog-alert-width);
+  width: var(--dialog-width-task);
   max-width: 100%;
+  min-width: 0;
   border-radius: var(--web-radius-card);
-  background: var(--color-canvas);
+  background: var(--color-surface);
   box-shadow: var(--shadow-dialog);
   padding: var(--web-dialog-pad-block) var(--web-dialog-pad-inline);
-  animation: web-modal-pop var(--motion-duration-content)
+  animation: surface-reveal var(--motion-duration-overlay)
     var(--motion-ease-standard);
 }
 
-/* 网页端对话框按 Apple 告警的排法：标题、正文文字、输入框内容、文字入口全部
-   沿卡片中轴居中；只有顶部叉叉继续跟随系统习惯（苹果靠左、其他靠右）。 */
 .web-modal-title {
   margin: 0 0 var(--space-7);
   color: var(--color-ink);
-  font-size: var(--type-section);
+  font-size: var(--type-subtitle);
   font-weight: var(--weight-semibold);
   line-height: 1.2;
-  text-align: center;
+  text-align: start;
 }
 
-/* 通用对话框的操作行与敏感操作卡片共用同一套槽位，两种卡片长得一样。 */
-.web-modal-actions {
-  display: flex;
-  gap: var(--web-dialog-button-gap);
-  margin-top: var(--row-padding);
-}
-
-.web-modal-actions .security-action {
-  flex: 1 1 var(--web-dialog-button-width);
-  min-width: var(--web-dialog-button-width);
-}
-
-@keyframes web-modal-fade {
-  from {
-    opacity: 0;
-  }
-}
-
-@keyframes web-modal-pop {
-  from {
-    opacity: 0;
-    transform: scale(0.96);
-  }
-}
-
-/* 敏感操作卡片：所有操作共用紧凑档 450（正文 370），同一张卡在所有步骤之间尺寸不变。
-   顶部操作带、标题、正文、提示行、操作行各占固定槽位，
-   换步骤或报错都只在槽内变化。 */
 .security-dialog {
   display: grid;
   gap: var(--row-padding);
   align-content: start;
 }
 
-/* 顶部固定一条操作带：返回在左端、叉叉在右端，两个圆形按钮共用同一套几何。
-   第一屏没有返回，叉叉仍钉在右端，位置不随步骤变化。 */
 .dialog-bar {
   display: flex;
   min-height: var(--control-icon-compact);
@@ -115,12 +84,11 @@
   margin: 0;
 }
 
-/* 选项是胶囊：占满正文宽度，两端与正文边线对齐，箭头贴着胶囊右端。 */
 .dialog-options {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: var(--space-4);
-  /* 条目多于字段区时列表自身滚动，不把卡片撑高。 */
+
   max-height: var(--fields-area-height);
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -168,7 +136,6 @@
   color: var(--color-icon-muted);
 }
 
-/* Reserve one line for normal feedback; long errors may wrap and remain readable. */
 .dialog-notice {
   margin: 0;
   color: var(--color-secondary);
@@ -182,189 +149,38 @@
   text-align: center;
 }
 
-/* 文字入口在正文里居中；没有按钮时它独占操作行，也沿中轴居中。 */
-.dialog-switch {
-  justify-self: center;
-  padding: 0;
-}
-
-.dialog-foot {
-  justify-content: center;
-}
-
-/* 手机档沿用 Apple Account 的降级方式：紧凑卡整体变窄（450 → 335 → 290）、
-   内缩跟着变（40 → 30 → 20）、按钮竖排占满，任务卡直接铺满可用宽度，
-   再用同一条 clamp 把正文宽度锁回 570 上下。 */
-@media (max-width: 734px) {
-  :root {
-    --web-dialog-alert-width: 335px;
-    --web-dialog-pad-inline: 30px;
-  }
-
-  .web-modal-scrim {
-    padding: var(--space-8);
-  }
-
-  /* 手机端按 iOS 的顺序：推进动作在上，取消在下，所以用 column-reverse
-     而不是调换 DOM——DOM 仍然是「取消 → 确认」，与桌面从左到右读到的顺序一致。 */
-  .dialog-foot,
-  .web-modal-actions {
-    flex-direction: column-reverse;
-    align-items: stretch;
-  }
-
-  /* 竖排时不能保留 flex-grow：列向容器里 grow 会把按钮拉成一百多像素高。 */
-  .dialog-foot .security-action,
-  .web-modal-actions .security-action {
-    flex: 0 0 auto;
-    min-width: 0;
-    width: 100%;
-  }
-
-  /* 手机档按钮竖排：操作行从 32 变成 74（两枚 32 + 10 间距），
-     纯输入步骤的高度由 --foot-height 一处推导，不需要逐个卡片重抄。
-     375 与 320 两个视口实测一致，所以一档就够。
-     二维码步 402 = 说明 34 + 16 + 二维码 170 + 16 + 输入行 44 + 16 + 提示 17 + 16 + 操作行 74。 */
-  .security-dialog {
-    --foot-height: calc(
-      var(--control-button-compact) * 2 + var(--web-dialog-button-gap)
-    );
-  }
-
-  .security-dialog.is-enableTwoFactor {
-    --op-height: 402px;
-  }
-}
-
-@media (max-width: 374px) {
-  :root {
-    --web-dialog-alert-width: 290px;
-    --web-dialog-pad-inline: 20px;
-    --web-dialog-pad-block: 20px;
-  }
-}
-
-/* 两阶段共用同一副骨架：标题 → 正文 → 提示行 → 操作行。
-   正文不锁高度——选图到裁剪之间隔着系统文件面板，不是用户看得见的一次换步，
-   锁成裁剪那一步的高度只会让选图阶段空出一大片。 */
-.avatar-dialog.is-crop .avatar-crop-body {
-  /* 前进方向复用认证流程已有的那一份 keyframe，不另起动效语言。 */
-  animation: auth-enter-forward var(--motion-duration-step)
-    var(--motion-ease-standard);
-}
-
-.avatar-crop-body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-}
-
-.avatar-crop-area {
-  position: relative;
-  width: min(300px, 100%);
-  aspect-ratio: 1;
-  margin-inline: auto;
-  border-radius: var(--web-radius-control);
-  overflow: hidden;
-  background: var(--color-sunken);
-}
-
-/* 滑杆不能是一根没有语义的裸条：和「缩放」标签组成一行，
-   宽度仍与上方裁剪区同档，视觉上归为同一组。 */
-.avatar-zoom-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-5);
-  width: min(300px, 100%);
-  margin-inline: auto;
-}
-
-.avatar-zoom-label {
-  flex: none;
-  color: var(--color-secondary);
-  font-size: var(--type-caption);
-  line-height: 1;
-}
-
-.avatar-zoom-slider {
-  -webkit-appearance: none;
-  appearance: none;
-  display: block;
-  flex: 1;
-  min-width: 0;
-  height: 14px;
-  background: transparent;
-  cursor: pointer;
-}
-
-/* input 是替换元素，::before 根本不渲染，轨道必须画在伪元素轨道上。 */
-.avatar-zoom-slider::-webkit-slider-runnable-track {
-  height: 3px;
-  border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--color-ink) 16%, transparent);
-}
-
-.avatar-zoom-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 14px;
-  height: 14px;
-  /* 轨道 3px、滑块 14px，居中需要上移半个差值。 */
-  margin-top: -5.5px;
-  border: 1px solid color-mix(in srgb, var(--color-ink) 24%, transparent);
-  border-radius: var(--radius-circle);
-  background: var(--color-canvas);
-  box-shadow: var(--shadow-control);
-}
-
-.avatar-zoom-slider::-moz-range-track {
-  height: 3px;
-  border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--color-ink) 16%, transparent);
-}
-
-.avatar-zoom-slider::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
-  border: 1px solid color-mix(in srgb, var(--color-ink) 24%, transparent);
-  border-radius: var(--radius-circle);
-  background: var(--color-canvas);
-  box-shadow: var(--shadow-control);
-}
-
-/* 复用全站文字入口 .text-button（悬停只加深文字，不画背景），
-   这里只补一条在 flex 列里居中的布局。 */
-.avatar-repick-button {
-  align-self: center;
-}
-
-.avatar-pick-body {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-6);
-  padding: var(--space-4) 0 var(--space-2);
-}
-
-/* 两阶段的辅助提示共用一套：次级灰、居中、跟着内容走，不做成说明卡。 */
-.avatar-step-hint {
-  margin: 0;
-  color: var(--color-secondary);
-  font-size: var(--type-caption);
-  line-height: 1.5;
-  text-align: center;
-}
-
-.avatar-file-input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-}
-
 @media (prefers-reduced-motion: reduce) {
   .web-modal-scrim,
   .web-modal {
     animation: none;
+  }
+}
+
+.dialog-foot {
+  min-height: var(--foot-height);
+  align-items: center;
+}
+
+.dialog-switch {
+  align-self: center;
+  justify-self: center;
+}
+@media (max-width: 480px) {
+  :root {
+    --web-dialog-pad-inline: var(--space-9);
+  }
+  .web-modal-scrim {
+    padding: var(--space-8);
+  }
+}
+@media (max-width: 480px) and (pointer: coarse) {
+  .security-dialog {
+    --foot-height: calc(var(--button-height) * 2 + var(--control-button-gap));
+  }
+}
+@media (pointer: coarse) {
+  .dialog-bar button {
+    width: var(--control-touch-target);
+    height: var(--control-touch-target);
   }
 }

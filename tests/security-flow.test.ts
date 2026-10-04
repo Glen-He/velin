@@ -10,13 +10,20 @@ test('back navigation preserves every visited step and stops at the dialog entry
   let history = initialSecurityHistory('changePassword')
   for (const stage of ['methods', 'verify', 'newPassword'] as const)
     history = securityHistoryReducer(history, { type: 'advance', stage })
-  assert.deepEqual(history, ['password', 'methods', 'verify', 'newPassword'])
+  assert.equal(history.direction, 'forward')
+  assert.deepEqual(history.stages, [
+    'password',
+    'methods',
+    'verify',
+    'newPassword',
+  ])
   history = securityHistoryReducer(history, { type: 'back' })
-  assert.equal(history.at(-1), 'verify')
+  assert.equal(history.direction, 'backward')
+  assert.equal(history.stages.at(-1), 'verify')
   history = securityHistoryReducer(history, { type: 'back' })
-  assert.equal(history.at(-1), 'methods')
+  assert.equal(history.stages.at(-1), 'methods')
   history = securityHistoryReducer(history, { type: 'password-route' })
-  assert.deepEqual(securityHistoryReducer(history, { type: 'back' }), [
+  assert.deepEqual(securityHistoryReducer(history, { type: 'back' }).stages, [
     'password',
   ])
 })

@@ -26,8 +26,7 @@ test('malformed device data is distinct from an empty list', () => {
   const metadata = { name: 'Velin', version: 'test', osName: 'macOS' }
   assert.throws(() => toDesktopSessions(null, null, metadata))
   assert.deepEqual(toDesktopSessions([], null, metadata), [])
-  assert.deepEqual(
+  assert.throws(() =>
     toDesktopSessions([{ token: 'missing-id' }], null, metadata),
-    [],
   )
 })

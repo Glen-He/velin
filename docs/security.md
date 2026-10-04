@@ -6,6 +6,8 @@ Renderer 只持有可展示资料与会话 ID。Cookie、会话 token 和 PKCE v
 
 模型请求沿 typed preload → Main → 服务端流动。IPC 和 HTTP 都验证同一个 contracts schema；服务端重新判定有效会话、请求预算与速率限制。
 
+所有 `/api/*` 请求在解码 JSON、表单或图片之前限制请求体：一般入口最多 1 MiB，头像上传遵循 contracts 的上传上限。即使没有 `Content-Length` 或声明偏小，也按实际流入字节计数；超限取消读取并返回带本地化文案的 HTTP 413。大小限制与后续来源、会话、schema 和速率校验分别执行。
+
 ## 逐操作授权
 
 登录方式 `amr` 只作审计记录，不再为后续操作授予等级。敏感操作必须获得 `security_operation_grant`：
@@ -19,12 +21,12 @@ Renderer 只持有可展示资料与会话 ID。Cookie、会话 token 和 PKCE v
 
 通行密钥注册保护 `/passkey/verify-registration`，而非只保护 options 请求。`/password/set` 自身执行授权、统一密码策略、泄露口令检查及退出其他设备，直接调用它也无法跳过这些要求。旧密码路径 `/change-password` 通过当前密码确认，客户端传 `revokeOtherSessions: true`；不再额外叠加一次验证。
 
-凭据变化后取消所有未消费授权。密码验证路径若写入成功但退出其他设备失败，返回明确的部分成功错误，不能显示普通成功。旧 schema 的 `verifiedAt` 与 `stepUpLevel` 暂留以兼容已有迁移，已不参与授权。
+凭据变化后取消所有未消费授权。密码验证路径若写入成功但退出其他设备失败，返回明确的部分成功错误，不能显示普通成功。迁移 `007` 删除旧会话字段 `verifiedAt` 与 `stepUpLevel`，授权只由操作授权表管理。
 
 ## 凭据验证与来源
 
 - 邮箱验证使用 Better Auth 的 `/email-otp/verify-email`，由库原子消费验证码；`check-verification-otp` 不适合作为一次性授权证据。
-- TOTP 与恢复码复用库端点，升级时 `trustDevice: false`。未完成双重认证配置的账户不允许借升级路径完成配置。
+- TOTP 与恢复码复用库端点，升级时 `trustDevice: false`。未完成双重认证配置的账号不允许借升级路径完成配置。
 - 通行密钥验证要求真实 user verification；验证结果必须属于原会话用户。库创建的临时登录会话立即删除，不把新会话 Cookie 交给升级调用方。
 - 自定义 Cookie 路由先校验外层 Origin 和 JSON 内容类型，再构造内部认证请求。没有来源的浏览器敏感请求拒绝；Electron 使用自己的认证 API 通道。
 - 生产升级发送与验证按账号计数，并用数据库原子更新处理并发。内部认证调用以不可对外获得的进程标记避免重复落入共享限流桶；直接认证请求仍按库规则限流。Node 入口从真实 socket 获取地址并覆盖客户端地址头。只有 `TRUSTED_PROXY_ADDRESSES` 明确登记的代理才能提供转发链，链的解析交给认证库；代理须追加或覆盖 `X-Forwarded-For`，禁止直接透传用户伪造的值。

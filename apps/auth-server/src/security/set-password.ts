@@ -2,7 +2,7 @@ import {
   isValidNewPassword,
   passwordPolicyMessage,
 } from '@velin/contracts/policy'
-import { resetUserGrants } from './session-audit.js'
+import { operationGrants } from './grants.js'
 import type { BetterAuthPlugin } from 'better-auth'
 import {
   APIError,
@@ -27,7 +27,7 @@ export const setPasswordPlugin: BetterAuthPlugin = {
     // 路径必须用 createAuthEndpoint 的位置参数形式传：对象形式只会写进
     // endpoint.options.path，better-auth 建路由时读的是顶层 path，
     // 结果端点在 auth.api 里存在、HTTP 层 404。
-    setPasswordWithStrongSession: createAuthEndpoint(
+    setPasswordWithOperationGrant: createAuthEndpoint(
       '/password/set',
       {
         method: 'POST',
@@ -59,7 +59,7 @@ export const setPasswordPlugin: BetterAuthPlugin = {
           password: passwordHash,
         })
 
-        await resetUserGrants(session.user.id)
+        await operationGrants.revokeUser(session.user.id)
         try {
           const sessions = await context.context.internalAdapter.listSessions(
             session.user.id,

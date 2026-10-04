@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-// Method describes the evidence, not a standards-based assurance level.
+// 方法描述验证证据，不代表标准化的认证保证等级。
 export const verificationMethods = [
   'emailOtp',
   'totp',

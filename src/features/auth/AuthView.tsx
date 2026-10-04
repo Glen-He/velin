@@ -1,5 +1,6 @@
 import { ArrowRight, ChevronLeft, KeyRound, LoaderCircle } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { Button } from '@velin/ui/Button.tsx'
 import type { FormEvent } from 'react'
 import type { AuthFlow } from '@velin/contracts/auth-protocol'
 
@@ -24,6 +25,7 @@ function AuthView({
   onRegister,
   onSignIn,
 }: AuthViewProps) {
+  const submitting = useRef(false)
   const [mode, setMode] = useState<'choice' | 'authorization-code'>('choice')
   const [authorizationCode, setAuthorizationCode] = useState('')
   const [codeError, setCodeError] = useState<string | null>(null)
@@ -33,10 +35,11 @@ function AuthView({
     event.preventDefault()
     const code = authorizationCode.trim()
 
-    if (!code) {
+    if (!code || submitting.current || isOpeningBrowser) {
       return
     }
 
+    submitting.current = true
     setCodeError(null)
     setIsAuthenticatingCode(true)
 
@@ -45,6 +48,7 @@ function AuthView({
     } catch {
       setCodeError('授权码无效或已经过期，请重新获取。')
     } finally {
+      submitting.current = false
       setIsAuthenticatingCode(false)
     }
   }
@@ -100,7 +104,9 @@ function AuthView({
               <div className="desktop-auth-feedback" aria-hidden="true" />
             </section>
           </div>
-          <button
+          <Button
+            size="regular"
+            stretch
             className={`desktop-auth-button desktop-auth-main-button no-drag${
               mode === 'authorization-code' ? ' is-code' : ''
             }`}
@@ -136,7 +142,7 @@ function AuthView({
                 </span>
               </>
             )}
-          </button>
+          </Button>
           <div
             className={`desktop-auth-flow-track desktop-auth-detail-stage${
               mode === 'authorization-code' ? ' is-code' : ''
@@ -147,16 +153,20 @@ function AuthView({
               aria-hidden={mode !== 'choice'}
               inert={mode !== 'choice'}
             >
-              <button
-                className="desktop-auth-button desktop-auth-secondary-button no-drag"
+              <Button
+                variant="outline"
+                size="regular"
+                stretch
+                className="desktop-auth-secondary-button no-drag"
                 type="button"
                 disabled={isBusy || mode !== 'choice'}
                 onClick={() => void openAuthenticationPage(onRegister)}
               >
                 注册
-              </button>
+              </Button>
               <button
-                className="desktop-auth-code-link no-drag"
+                className="text-action desktop-auth-code-link no-drag"
+                data-tone="neutral"
                 type="button"
                 disabled={isBusy || mode !== 'choice'}
                 onClick={() => setMode('authorization-code')}
@@ -181,21 +191,22 @@ function AuthView({
                     id="desktop-auth-code"
                     autoCapitalize="none"
                     autoComplete="one-time-code"
-                    placeholder="粘贴授权码"
+                    placeholder="一次性授权码"
+                    aria-label="一次性授权码"
+                    disabled={isBusy}
                     spellCheck={false}
                     value={authorizationCode}
                     onChange={(event) =>
                       setAuthorizationCode(event.target.value)
                     }
                   />
-                  <label htmlFor="desktop-auth-code">一次性授权码</label>
                   <button
                     type="submit"
                     aria-label="提交授权码"
                     disabled={
                       mode !== 'authorization-code' ||
                       !authorizationCode.trim() ||
-                      isAuthenticatingCode
+                      isBusy
                     }
                   >
                     {isAuthenticatingCode ? (
@@ -221,7 +232,8 @@ function AuthView({
           </div>
         </div>
         <button
-          className="desktop-auth-back-button no-drag"
+          className="text-action desktop-auth-back-button no-drag"
+          data-tone="neutral"
           type="button"
           disabled={isBusy}
           onClick={() => {

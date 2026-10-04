@@ -27,7 +27,7 @@ pnpm dev
 
 `pnpm install` 可能不执行 Electron 的安装脚本（即使 `pnpm-workspace.yaml` 已允许 `electron` 构建），此时 `node_modules/electron/dist` 为空。安装后先用 `pnpm exec electron --version` 确认；缺失时该命令会自行补下载。首次 `pnpm dev` 同样会触发补下载，但在网络不稳时会在启动阶段失败，因此建议先单独跑一次校验。
 
-本地数据库支持的是 PostgreSQL 18 版本线。`pnpm dev` 会把认证 API 起在 3000 端口、浏览器认证页起在 5174 端口、Electron 渲染层起在 5173 端口。配置好 `GOOGLE_CLIENT_ID` 和 `GOOGLE_CLIENT_SECRET` 之后才可用 Google 登录。邮箱注册默认开放，不要求邀请码。本地环境下邮箱验证码由认证服务打印到终端；生产环境缺少 SMTP 和 HTTPS 配置时同样拒绝启动。
+本地数据库支持的是 PostgreSQL 18 版本线。`pnpm dev` 会把认证 API 起在 3000 端口、浏览器认证页起在 5174 端口、Electron 渲染层起在 5173 端口。配置好 `GOOGLE_CLIENT_ID` 和 `GOOGLE_CLIENT_SECRET` 之后才可用 Google 登录。邮箱注册默认开放，不要求邀请码。本地 console 传输通过开发回码机制向页面提供验证码，终端只记录英文结构化事件；生产环境缺少 SMTP 和 HTTPS 配置时拒绝启动。
 
 macOS 和 Linux 从命令行启动的开发版不能可靠接收应用协议回跳。开发版点击登录或注册会在浏览器完成验证后显示一次性授权码，桌面端同步进入输入步骤；复制并粘贴该码即可完成登录。已安装且正确注册 `com.velin.desktop` 协议的发布版使用自动回跳。
 
@@ -55,8 +55,9 @@ pnpm build
 
 - [模块与职责](docs/architecture.md)
 - [设计系统](docs/design-system.md)
+- [界面与交互约束](docs/interface-guidelines.md)
+- [工程与设计维护规范](docs/engineering-guidelines.md)
 - [敏感操作授权](docs/security.md)
-- [本次重构验证](docs/refactor-validation.md)
 
 共享协议与视觉基础分别位于 `packages/contracts` 和 `packages/ui`。开发命令会先编译 contracts，再监听变更。新代码首次运行前执行 `pnpm db:migrate`，应用迁移 005 的一次性操作授权表。
 

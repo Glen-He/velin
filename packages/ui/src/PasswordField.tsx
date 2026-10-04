@@ -7,7 +7,7 @@ type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> & {
   inputRef?: Ref<HTMLInputElement>
 }
 
-// Visibility belongs to each field, never the form. CSS reserves the action slot.
+// 每个字段独立管理密码可见性，CSS 保留尾部动作槽位。
 export function PasswordField({ label, inputRef, ...props }: Props) {
   const [visible, setVisible] = useState(false)
   return (
