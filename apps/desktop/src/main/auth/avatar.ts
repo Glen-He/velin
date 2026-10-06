@@ -1,4 +1,4 @@
-import { apiServerUrl, authClient } from './auth-client'
+import { serviceUrl, authClient } from './auth-client'
 import { isAvatarJpeg } from '@velin/contracts/avatar'
 import { errorMessage } from '@velin/contracts/error-copy'
 import { fetchOwnedAvatarImage } from './avatar-request'
@@ -10,7 +10,7 @@ export async function uploadAvatar(jpeg: Uint8Array) {
     throw new Error('头像必须是 512KB 以内的 JPEG 图片。')
   }
 
-  const response = await fetch(`${apiServerUrl}/api/avatars`, {
+  const response = await fetch(`${serviceUrl}/api/avatars`, {
     method: 'POST',
     headers: {
       'Content-Type': 'image/jpeg',
@@ -32,5 +32,5 @@ export async function uploadAvatar(jpeg: Uint8Array) {
 // 渲染层不允许直接请求 API 来源（CSP 约束），头像字节统一由 Main
 // 代取；地址必须严格指向认证服务的头像路由，仅路径与版本参数可变。
 export function fetchAvatarImage(imageUrl: string) {
-  return fetchOwnedAvatarImage(imageUrl, apiServerUrl)
+  return fetchOwnedAvatarImage(imageUrl, serviceUrl)
 }

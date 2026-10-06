@@ -201,7 +201,7 @@ export function SignInPage({ query }: { query: Record<string, string> }) {
                       className="auth-field-action"
                       type="button"
                       aria-label={showPassword ? '隐藏密码' : '显示密码'}
-                      title={showPassword ? '隐藏密码' : '显示密码'}
+                      aria-pressed={showPassword}
                       onClick={() => setShowPassword((current) => !current)}
                     >
                       {showPassword ? (
@@ -475,7 +475,6 @@ export function SignInPage({ query }: { query: Record<string, string> }) {
                   className="auth-provider-button"
                   type="button"
                   aria-label="使用 Google 登录"
-                  title="使用 Google 登录"
                   disabled={isSubmitting}
                   onClick={() => void signInWithGoogle()}
                 >
@@ -485,7 +484,6 @@ export function SignInPage({ query }: { query: Record<string, string> }) {
                   className="auth-provider-button"
                   type="button"
                   aria-label="使用通行密钥登录"
-                  title="使用通行密钥登录"
                   disabled={isSubmitting || !canUsePasskey}
                   onClick={() => void signInWithPasskey()}
                 >

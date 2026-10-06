@@ -12,5 +12,5 @@ const handler = withApiBoundary(async () => {
     developmentEmailPreview:
       !config.isProduction && config.email.transport === 'console',
   })
-}, {})
+})
 export { handler as GET }

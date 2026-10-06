@@ -217,8 +217,10 @@
 }
 
 .desktop-auth-code-form button:disabled {
+  background: var(--color-control);
+  color: var(--color-secondary);
   cursor: default;
-  opacity: 0.35;
+  opacity: 0.65;
 }
 
 .desktop-auth-code-form button svg {
@@ -248,9 +250,4 @@
 }
 .desktop-auth-back-button {
   margin-top: var(--space-10);
-}
-.desktop-auth-code-form button:disabled {
-  background: var(--color-control);
-  color: var(--color-secondary);
-  opacity: 0.65;
 }

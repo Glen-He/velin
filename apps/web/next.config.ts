@@ -13,6 +13,8 @@ const config: NextConfig = {
         headers: [
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'X-Frame-Options', value: 'DENY' },
+          // 此策略仅限制嵌入，不代表已部署 script-src / style-src 内容策略。
+          { key: 'Content-Security-Policy', value: "frame-ancestors 'none'" },
           { key: 'Cross-Origin-Resource-Policy', value: 'same-origin' },
           { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
           { key: 'Origin-Agent-Cluster', value: '?1' },

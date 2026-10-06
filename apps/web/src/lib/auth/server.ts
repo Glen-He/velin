@@ -11,7 +11,6 @@ import { databasePool } from '../database/connection'
 import { rememberDevCode, sendAuthenticationEmail } from '../email'
 import { logger } from '../logging'
 import { isRecord } from '@velin/contracts/value'
-import { isValidDisplayName, isValidNewPassword } from '../registration-policy'
 import {
   operationByPath,
   operationRequirements,
@@ -22,7 +21,12 @@ import {
   operationGrantHeader,
   operationGrantSchema,
 } from '@velin/contracts/security'
-import { passwordPolicy, passwordPolicyMessage } from '@velin/contracts/policy'
+import {
+  isValidDisplayName,
+  isValidNewPassword,
+  passwordPolicy,
+  passwordPolicyMessage,
+} from '@velin/contracts/policy'
 import { setPasswordPath, setPasswordPlugin } from '../security/set-password'
 import { requiredDeliveryPlugin } from '../security/required-delivery'
 import { clientAddressHeader } from '../http/client-address'

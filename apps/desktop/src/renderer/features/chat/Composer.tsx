@@ -69,7 +69,6 @@ function Composer({ isStreaming, sendOnEnter, onSend, onStop }: ComposerProps) {
           type="button"
           disabled
           aria-label="添加附件（暂未开放）"
-          title="附件功能暂未开放"
         >
           <Plus className="composer-attachment-icon" aria-hidden="true" />
         </button>
@@ -99,7 +98,6 @@ function Composer({ isStreaming, sendOnEnter, onSend, onStop }: ComposerProps) {
             type="button"
             onClick={onStop}
             aria-label="停止生成"
-            title="停止生成"
           >
             <Square className="send-button-icon" aria-hidden="true" />
           </button>
@@ -109,7 +107,6 @@ function Composer({ isStreaming, sendOnEnter, onSend, onStop }: ComposerProps) {
             type="submit"
             disabled={!canSend}
             aria-label="发送消息"
-            title="发送消息"
           >
             <ArrowUp className="send-button-icon" aria-hidden="true" />
           </button>

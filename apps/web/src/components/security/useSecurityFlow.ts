@@ -9,7 +9,14 @@ import type {
   OperationGrant,
   VerificationIntent,
 } from '@velin/contracts/security'
-import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
+import {
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from 'react'
 import type { FormEvent } from 'react'
 import { actionErrorMessage, isStepUpRequired } from '../../lib/http/client'
 import { registerPasskey } from '../auth/passkey'
@@ -379,15 +386,17 @@ export function useSecurityFlow({
     }
   }
 
-  // running 阶段一进入就执行；'verify' 通过后也会落到这里。
+  // 阶段变化负责触发，Effect Event 读取当前操作与回调；重渲染不会重复消费授权。
+  const runCurrentOperation = useEffectEvent(() => {
+    void runOperation()
+  })
   useEffect(() => {
     if (stage !== 'running' || autoRan.current.has('running')) {
       return
     }
 
     autoRan.current.add('running')
-    void runOperation()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    runCurrentOperation()
   }, [stage])
 
   async function savePassword(event?: FormEvent<HTMLFormElement>) {

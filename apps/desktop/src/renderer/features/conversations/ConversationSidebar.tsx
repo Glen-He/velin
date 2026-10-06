@@ -168,6 +168,10 @@ function ConversationSidebar({
   )
   const [activeDragId, setActiveDragId] = useState<string | null>(null)
   const accountButtonRef = useRef<HTMLButtonElement>(null)
+  const accountName = authUser ? authUser.name.trim() || authUser.email : '登录'
+  const accountIdentity = authUser
+    ? `${accountName}（${authUser.email}）`
+    : accountName
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -334,15 +338,15 @@ function ConversationSidebar({
           ref={accountButtonRef}
           className="account-button no-drag"
           type="button"
-          title={authUser?.email ?? '登录'}
+          aria-label={accountIdentity}
           aria-expanded={isActive && accountMenu !== null}
           aria-haspopup="menu"
           onPointerDown={(event) => event.stopPropagation()}
           onClick={toggleAccountMenu}
         >
           <UserAvatar user={authUser} />
-          <TruncatedText className="account-name">
-            {authUser ? authUser.name.trim() || authUser.email : '登录'}
+          <TruncatedText className="account-name" tooltip={accountIdentity}>
+            {accountName}
           </TruncatedText>
         </button>
       </div>

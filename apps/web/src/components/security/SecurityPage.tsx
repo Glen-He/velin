@@ -7,7 +7,7 @@ import { useState } from 'react'
 import { authClient } from '../../lib/auth/client'
 import { LoadingState } from '../LoadingState'
 import { useGatedActions } from './gated-actions'
-import { usePasskeyList } from './passkey-list'
+import { usePasskeyList } from './usePasskeyList'
 import type { DialogOperation } from './security-api'
 
 // 总览页只按"用户心智"分两组：怎么登录、怎么保护账号。

@@ -54,7 +54,6 @@ export function AccountOverview({
             <button
               className="account-avatar-edit"
               aria-label="更换头像"
-              title="更换头像"
               type="button"
               onClick={onEditAvatar}
             >
@@ -74,7 +73,6 @@ export function AccountOverview({
             <button
               className="panel-icon-action"
               aria-label="编辑用户名"
-              title="编辑用户名"
               type="button"
               onClick={onEditName}
             >

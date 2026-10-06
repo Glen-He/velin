@@ -1,0 +1,312 @@
+.assistant-markdown > :first-child {
+  margin-top: 0;
+}
+.assistant-markdown > :last-child {
+  margin-bottom: 0;
+}
+.assistant-markdown [data-streamdown='strong'] {
+  font-weight: var(--weight-semibold);
+}
+.assistant-markdown
+  :where(p, ul, ol, blockquote, pre, .markdown-table-scroll, figure) {
+  margin: 0 0 0.85em;
+}
+.assistant-markdown p {
+  margin-bottom: 1em;
+}
+.assistant-markdown :is(h1, h2, h3, h4, h5, h6) {
+  margin: 1.25em 0 0.5em;
+  font-weight: var(--weight-semibold);
+  line-height: var(--line-height-reading-heading);
+  text-wrap: pretty;
+}
+.assistant-markdown h1 {
+  font-size: var(--type-reading-title);
+}
+.assistant-markdown h2 {
+  font-size: var(--type-reading-heading);
+}
+.assistant-markdown h3 {
+  font-size: var(--type-reading-subheading);
+}
+.assistant-markdown :is(h4, h5, h6) {
+  font-size: var(--type-reading);
+}
+.assistant-markdown :is(h5, h6) {
+  color: var(--color-secondary);
+}
+.assistant-markdown :is(ul, ol) {
+  padding-inline-start: 1.6em;
+}
+.assistant-markdown li + li {
+  margin-top: 0.3em;
+}
+.assistant-markdown li > :first-child {
+  margin-top: 0;
+}
+.assistant-markdown li > :last-child {
+  margin-bottom: 0;
+}
+.assistant-markdown li > p {
+  margin-bottom: 0.55em;
+}
+.assistant-markdown li > :is(ul, ol) {
+  margin-top: 0.35em;
+}
+.assistant-markdown [data-streamdown='horizontal-rule'] {
+  height: 0;
+  margin: 1.5em 0;
+  border: 0;
+  border-top: var(--line-width-divider) solid var(--color-border-subtle);
+}
+.assistant-markdown blockquote {
+  padding-inline-start: var(--space-7);
+  border-inline-start: 2px solid var(--color-border-subtle);
+  color: var(--color-secondary);
+}
+.assistant-markdown blockquote > :last-child {
+  margin-bottom: 0;
+}
+.assistant-markdown pre {
+  max-width: 100%;
+  overflow-x: auto;
+  padding: var(--space-6) var(--space-7);
+  border-radius: var(--radius-field);
+  corner-shape: var(--surface-corner-shape);
+  background: var(--color-sunken);
+  font-size: var(--type-reading-code);
+  line-height: var(--line-height-reading-code);
+  white-space: pre;
+  overflow-wrap: normal;
+  word-break: normal;
+  tab-size: 4;
+}
+.assistant-markdown code {
+  font-family: var(--font-mono);
+  font-size: var(--type-reading-code);
+}
+.assistant-markdown :not(pre) > code {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-compact);
+  corner-shape: var(--surface-corner-shape);
+  background: var(--color-sunken);
+}
+.assistant-markdown .markdown-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.assistant-markdown table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+  font-size: var(--type-reading);
+}
+.assistant-markdown :is(th, td) {
+  min-width: 5em;
+  max-width: 28rem;
+  padding: var(--space-5) var(--space-6);
+  text-align: start;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.assistant-markdown th {
+  border-bottom: var(--line-width-divider) solid var(--color-border-subtle);
+  background: var(--color-sunken);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+.assistant-markdown tbody tr + tr td {
+  border-top: var(--line-width-divider) solid var(--color-border-subtle);
+}
+.assistant-markdown a {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.assistant-markdown a:hover {
+  color: var(--color-blue-text);
+}
+.assistant-markdown .markdown-image-reference {
+  color: var(--color-secondary);
+}
+.assistant-markdown [data-streamdown='code-block'] {
+  position: relative;
+  display: flex;
+  max-width: 100%;
+  flex-direction: column;
+  overflow: hidden;
+  margin: 0 0 0.85em;
+  border-radius: var(--radius-field);
+  corner-shape: var(--surface-corner-shape);
+  background: var(--color-sunken);
+}
+.assistant-markdown [data-streamdown='code-block-header'] {
+  display: flex;
+  height: 36px;
+  align-items: center;
+  padding: 0 calc(var(--control-icon-compact) + var(--space-7)) 0 var(--space-7);
+  color: var(--color-secondary);
+  font-size: var(--type-caption);
+  line-height: 1;
+}
+.assistant-markdown [data-streamdown='code-block-header'] span:empty::before {
+  content: '代码';
+}
+.assistant-markdown [data-streamdown='code-block-actions'] {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-4);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-duration-feedback) ease;
+}
+.assistant-markdown
+  [data-streamdown='code-block']:is(:hover, :focus-within)
+  [data-streamdown='code-block-actions'] {
+  opacity: 1;
+  pointer-events: auto;
+}
+@media (hover: none) {
+  .assistant-markdown [data-streamdown='code-block-actions'] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+.assistant-markdown [data-streamdown='code-block-actions'] .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  border: 0;
+  white-space: nowrap;
+}
+.assistant-markdown [data-streamdown='code-block-copy-button'] {
+  display: grid;
+  width: var(--control-icon-compact);
+  height: var(--control-icon-compact);
+  place-items: center;
+  padding: 0;
+  border-radius: var(--radius-compact);
+  corner-shape: var(--surface-corner-shape);
+  background: transparent;
+  color: var(--color-secondary);
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-feedback) ease,
+    color var(--motion-duration-feedback) ease;
+}
+.assistant-markdown [data-streamdown='code-block-copy-button'] svg {
+  width: var(--icon-chat-action);
+  height: var(--icon-chat-action);
+}
+.assistant-markdown
+  [data-streamdown='code-block-copy-button']:hover:not(:disabled) {
+  background: var(--color-control-hover);
+  color: var(--color-ink);
+}
+.assistant-markdown [data-streamdown='code-block-copy-button']:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+.assistant-markdown [data-streamdown='code-block-body'] {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: var(--space-6) var(--space-7);
+}
+.assistant-markdown [data-streamdown='code-block-body'] pre {
+  min-width: max-content;
+  max-width: none;
+  overflow: visible;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.assistant-markdown [data-streamdown='code-block-body'] code > span {
+  display: block;
+  white-space: pre;
+  overflow-wrap: normal;
+}
+.assistant-markdown [data-streamdown='code-block-body'] [style*='--sdm-c'] {
+  color: var(--sdm-c, inherit);
+}
+:root[data-theme='dark']
+  .assistant-markdown
+  [data-streamdown='code-block-body']
+  [style*='--sdm-c'] {
+  color: var(--shiki-dark, var(--sdm-c, inherit));
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light'])
+    .assistant-markdown
+    [data-streamdown='code-block-body']
+    [style*='--sdm-c'] {
+    color: var(--shiki-dark, var(--sdm-c, inherit));
+  }
+}
+.assistant-markdown :is(.markdown-table-scroll, .katex-display):focus-visible,
+.assistant-markdown a:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.assistant-markdown .katex {
+  font-size: 1.05em;
+}
+.assistant-markdown .katex-display {
+  max-width: 100%;
+  overflow-x: auto;
+  padding-block: var(--space-2);
+}
+.assistant-markdown .markdown-diagram {
+  max-width: 100%;
+  overflow: hidden;
+  border: var(--line-width-panel) solid var(--color-border-subtle);
+  border-radius: var(--radius-field);
+  corner-shape: var(--surface-corner-shape);
+}
+.assistant-markdown .markdown-diagram figcaption {
+  padding: var(--space-5) var(--space-7);
+  color: var(--color-secondary);
+  font-size: var(--type-caption);
+}
+/* 独立浅色画布承载 Mermaid 自身的中性色板，浅深主题都保留原始图形对比度。 */
+.assistant-markdown .markdown-diagram-canvas {
+  overflow-x: auto;
+  padding: var(--space-7);
+  background: #fff;
+}
+.assistant-markdown .markdown-diagram-canvas svg {
+  display: block;
+  width: 100%;
+  min-width: 320px;
+  height: auto;
+}
+.assistant-markdown .markdown-diagram-fallback {
+  padding: var(--space-7);
+}
+.assistant-markdown .markdown-diagram-fallback p {
+  color: var(--color-secondary);
+  font-size: var(--type-body);
+}
+.assistant-markdown .markdown-diagram :is(pre, p):last-child {
+  margin-bottom: 0;
+}
+.assistant-markdown .markdown-diagram-source {
+  padding: var(--space-5) var(--space-7);
+}
+.assistant-markdown .markdown-diagram-source summary {
+  color: var(--color-secondary);
+  font-size: var(--type-caption);
+  cursor: pointer;
+}
+.assistant-markdown .markdown-diagram-source pre {
+  margin-top: var(--space-6);
+}

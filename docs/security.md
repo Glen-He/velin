@@ -6,6 +6,16 @@ Renderer 只持有可展示资料与会话 ID。Cookie、会话 token 和 PKCE v
 
 模型请求沿 typed preload → Main → 服务端流动。IPC 和 HTTP 都验证同一个 contracts schema；服务端重新判定有效会话、请求预算与速率限制。
 
+Renderer CSP 默认仅允许自身脚本和连接；发布资源不包含 localhost 或开发 WebSocket 白名单。Vite 仅在开发服务中按实际地址放行 HMR，并为 React 前导脚本设置 nonce。构建 mode 不能放宽发布策略；禁止子框架使用 `frame-src`，窗口打开与导航仍由 Main 独立限制。
+
+开发启动显式指定 Electron 参数，不沿用启动插件的 `--no-sandbox` 默认值；开发与发布都保持 Renderer 沙箱、contextIsolation 开启和 nodeIntegration 关闭。
+
+preload 单独打包为 CommonJS 的 `preload.cjs`，只依赖 sandbox loader 允许的 Electron 桥接；不把 ESM 源码格式当作沙箱 preload 的运行格式。[Electron preload 模块说明](https://www.electronjs.org/docs/latest/tutorial/esm#sandboxed-preload-scripts-cant-use-esm-imports)规定该边界。
+
+`frame-src` 限制页面加载子框架，`frame-ancestors` 限制页面被嵌入，两者不互相替代。HTML meta 不支持 `frame-ancestors`，因此不在桌面文件中保留无效声明；本地文件渲染由 Chromium 的来源边界与 Main 导航规则约束。Web 与 Vite 开发服务通过真实 HTTP 响应头发送 `frame-ancestors 'none'`，Web 同时保留 `X-Frame-Options: DENY`。
+
+Web 当前的 CSP 响应头仅提供防嵌入限制，未声明 `default-src`、`script-src` 或 `style-src`，不能作为 Web 已具备脚本、样式或 XSS 的 CSP 防护证据。它与桌面 Renderer 的资源限制不是同一保护范围；完整 Web 资源策略须另行覆盖 Next.js 的内联启动脚本、nonce 与真实加载行为，不能通过添加 `unsafe-inline` 宣称完成。
+
 所有 `/api/*` 请求在解码 JSON、表单或图片之前限制请求体：一般入口最多 1 MiB，头像上传遵循 contracts 的上传上限。即使没有 `Content-Length` 或声明偏小，也按实际流入字节计数；超限取消读取并返回带本地化文案的 HTTP 413。大小限制与后续来源、会话、schema 和速率校验分别执行。
 
 ## 逐操作授权

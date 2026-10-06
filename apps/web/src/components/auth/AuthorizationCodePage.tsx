@@ -1,4 +1,5 @@
 import { Button } from '@velin/ui/Button.tsx'
+import { copyFeedbackDurationMs } from '@velin/ui/clipboard-feedback.ts'
 import { useEffect, useState } from 'react'
 
 export function AuthorizationCodePage({
@@ -16,8 +17,10 @@ export function AuthorizationCodePage({
       return
     }
 
-    // 与消息复制反馈一致：保留 1600ms（--motion-duration-copied）后恢复。
-    const timer = window.setTimeout(() => setIsCopied(false), 1600)
+    const timer = window.setTimeout(
+      () => setIsCopied(false),
+      copyFeedbackDurationMs,
+    )
 
     return () => window.clearTimeout(timer)
   }, [isCopied])

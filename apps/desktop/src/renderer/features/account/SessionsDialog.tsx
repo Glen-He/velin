@@ -110,7 +110,6 @@ export function SessionsDialog({ onClose }: { onClose: () => void }) {
                       data-tone="danger"
                       type="button"
                       aria-label="退出该设备"
-                      title="退出该设备"
                       disabled={busy}
                       onClick={() => setPendingRevoke(session)}
                     >

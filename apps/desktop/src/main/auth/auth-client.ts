@@ -16,12 +16,10 @@ import type {
 } from '@velin/contracts/auth-protocol'
 import type { SessionClientMetadata } from '@velin/contracts/session-client'
 
-export const apiServerUrl = serviceOrigin(
+export const serviceUrl = serviceOrigin(
   process.env.VELIN_API_SERVER_URL ?? 'http://localhost:3000',
   !app.isPackaged,
 )
-
-export const authWebUrl = apiServerUrl
 
 function toAuthUser(user: Record<string, unknown>): AuthUser {
   return {
@@ -55,7 +53,7 @@ export function subscribeAuthenticatedUser(listener: (user: AuthUser) => void) {
 
 const electronClientOptions = {
   clientID: 'velin-desktop',
-  signInURL: `${authWebUrl}/sign-in`,
+  signInURL: `${serviceUrl}/sign-in`,
   protocol: { scheme: 'com.velin.desktop' },
   callbackPath: '/auth/callback',
   storage: storage({
@@ -80,7 +78,7 @@ function createDesktopAuthClient(signInURL: string) {
   const plugin = configuredClient as unknown as BetterAuthClientPlugin &
     typeof configuredClient
   return createAuthClient({
-    baseURL: apiServerUrl,
+    baseURL: serviceUrl,
     plugins: [plugin],
     fetchOptions: {
       onSuccess(context) {
@@ -102,13 +100,13 @@ export const authClient = createDesktopAuthClient(
   electronClientOptions.signInURL,
 )
 const registrationAuthClient = createDesktopAuthClient(
-  `${authWebUrl}/sign-in?mode=sign-up`,
+  `${serviceUrl}/sign-in?mode=sign-up`,
 )
 const manualCodeAuthClient = createDesktopAuthClient(
-  `${authWebUrl}/sign-in?flow=manual-code`,
+  `${serviceUrl}/sign-in?flow=manual-code`,
 )
 const manualRegistrationAuthClient = createDesktopAuthClient(
-  `${authWebUrl}/sign-in?mode=sign-up&flow=manual-code`,
+  `${serviceUrl}/sign-in?mode=sign-up&flow=manual-code`,
 )
 
 export async function requestDesktopAuthentication(

@@ -23,7 +23,7 @@ import { windowIpcChannels } from '@velin/contracts/window-protocol'
 import { ChatRuntime } from './chat/chat-runtime'
 import {
   authClient,
-  authWebUrl,
+  serviceUrl,
   getAuthenticatedUser,
   getInitialAuthenticatedUser,
   requestDesktopAuthentication,
@@ -143,7 +143,7 @@ function registerAuthIpcHandlers() {
       return
     }
 
-    await shell.openExternal(`${authWebUrl}/security`, { activate: true })
+    await shell.openExternal(`${serviceUrl}/security`, { activate: true })
   })
 
   ipcMain.handle(authIpcChannels.updateDisplayName, async (event, payload) => {
@@ -461,7 +461,7 @@ function createWindow() {
         }
       : {}),
     webPreferences: {
-      preload: join(currentDirectory, 'preload.mjs'),
+      preload: join(currentDirectory, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,

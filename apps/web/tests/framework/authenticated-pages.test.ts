@@ -45,7 +45,7 @@ test(
     const { databasePool } = await import('../../src/lib/database/connection')
     const context = await auth.$context
     const email = `ssr-${crypto.randomUUID()}@example.test`
-    const password = 'Velin SSR fixture phrase 20261004!'
+    const password = 'Velin-SSR-fixture-20261004!'
     const user = await context.internalAdapter.createUser(
       { name: 'SSR 测试账号', email, emailVerified: true },
       { method: 'email-password' },
@@ -103,6 +103,12 @@ test(
           redirect: 'manual',
         })
         assert.equal(response.status, 200, path)
+        assert.equal(
+          response.headers.get('content-security-policy'),
+          "frame-ancestors 'none'",
+          path,
+        )
+        assert.equal(response.headers.get('x-frame-options'), 'DENY', path)
         const html = await response.text()
         assert.doesNotMatch(
           html,
@@ -114,6 +120,44 @@ test(
           false,
           'SSR must not serialize session credentials',
         )
+        if (path === '/account') {
+          // 验证真实发布 URL 与缓存，不把源码中的字体文件存在视为资源已发布。
+          const stylesheets = new Set(
+            [...html.matchAll(/href="([^"\s]+\.css)"/g)].map(
+              (match) => match[1],
+            ),
+          )
+          const checkedFonts = new Set<string>()
+          for (const stylesheet of stylesheets) {
+            const cssResponse = await fetch(new URL(stylesheet, baseUrl))
+            assert.equal(cssResponse.status, 200)
+            const css = await cssResponse.text()
+            const fonts = css.matchAll(
+              /url\(["']?([^\s)"']*(han-sans-common|inter-latin-normal|inter-latin-italic)-[^\s)"']*\.woff2)["']?\)/g,
+            )
+            for (const [, font, family] of fonts) {
+              const fontUrl = new URL(font, cssResponse.url)
+              const fontResponse = await fetch(fontUrl)
+              assert.equal(fontResponse.status, 200, fontUrl.href)
+              assert.match(
+                fontResponse.headers.get('content-type') ?? '',
+                /font\/woff2/,
+              )
+              assert.match(
+                fontResponse.headers.get('cache-control') ?? '',
+                /immutable/,
+              )
+              const bytes = Buffer.from(await fontResponse.arrayBuffer())
+              assert.equal(bytes.subarray(0, 4).toString(), 'wOF2')
+              checkedFonts.add(family)
+            }
+          }
+          assert.deepEqual(
+            [...checkedFonts].sort(),
+            ['han-sans-common', 'inter-latin-italic', 'inter-latin-normal'],
+            'Published CSS must serve both shared font families and real italic',
+          )
+        }
       }
     } finally {
       child.kill('SIGTERM')

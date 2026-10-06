@@ -4,18 +4,18 @@
 
 ## 分类与使用
 
-| 类别     | 档位 / 角色                                                                       | 应用                                                                          |
-| -------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| 字体     | `font-sans`、`font-mono`                                                          | 界面与长文使用系统无衬线；代码和授权码使用等宽字体                            |
-| 字号     | micro、caption、control、body、input、subtitle、section、page、auth-title         | 辅助提示、密集控件、正文、输入、分组与页面标题分别选用；使用 rem 支持字号设置 |
-| 字重     | regular、medium、semibold、bold                                                   | 正文、操作、分组、页面标题逐级强调                                            |
-| 间距     | control-gap、row、section、page；底层 `space-*`                                   | 同组控件、字段行、内容分组、页面外围使用不同档位；优先选语义别名              |
-| 矩形圆角 | control、compact、field、menu、message、card                                      | 按控件与容器角色选档；客户端连续曲率与网页圆弧分别定标                        |
-| 完整曲率 | pill、circle                                                                      | 胶囊按钮与圆形按钮；不使用普通矩形圆角冒充胶囊                                |
-| 尺寸     | icon-_、control-_、dialog-width-\*                                                | 图形尺寸与命中区分别定义；光学校正只影响槽内墨迹                              |
-| 颜色     | canvas、surface、sunken、ink、secondary、border、control                          | 背景、层级、正文、辅助说明、边界与控件，不按“灰色几号”直接选颜色              |
-| 动作颜色 | primary / on-primary、accent-fill / on-accent、danger-text / danger-fill、success | 文字、图标、焦点与填充分别选色；前景与背景成对使用，不以相同色值代替相同语义  |
-| 动效     | feedback、panel、content、step、overlay                                           | 悬停、侧栏、内容、步骤；时间与缓动来自共享令牌                                |
+| 类别     | 档位 / 角色                                                                             | 应用                                                                          |
+| -------- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| 字体     | `font-sans`、`font-mono`                                                                | Apple 原生 UI / 苹方，其他平台 Inter / 思源黑体；代码英文使用等宽字体         |
+| 字号     | micro、caption、control、body、input、reading 系列、subtitle、section、page、auth-title | 辅助提示、密集控件、正文、输入、分组与页面标题分别选用；使用 rem 支持字号设置 |
+| 字重     | regular、medium、semibold、bold                                                         | 正文、操作、分组、页面标题逐级强调                                            |
+| 间距     | control-gap、row、section、page；底层 `space-*`                                         | 同组控件、字段行、内容分组、页面外围使用不同档位；优先选语义别名              |
+| 矩形圆角 | control、compact、field、menu、message、card                                            | 按控件与容器角色选档；客户端连续曲率与网页圆弧分别定标                        |
+| 完整曲率 | pill、circle                                                                            | 胶囊按钮与圆形按钮；不使用普通矩形圆角冒充胶囊                                |
+| 尺寸     | icon-_、control-_、dialog-width-\*                                                      | 图形尺寸与命中区分别定义；光学校正只影响槽内墨迹                              |
+| 颜色     | canvas、surface、sunken、ink、secondary、border、control                                | 背景、层级、正文、辅助说明、边界与控件，不按“灰色几号”直接选颜色              |
+| 动作颜色 | primary / on-primary、accent-fill / on-accent、danger-text / danger-fill、success       | 文字、图标、焦点与填充分别选色；前景与背景成对使用，不以相同色值代替相同语义  |
+| 动效     | feedback、panel、content、step、overlay                                                 | 悬停、侧栏、内容、步骤；时间与缓动来自共享令牌                                |
 
 客户端自绘矩形使用 `corner-shape: squircle`，半径与曲率在对应组件样式内一起声明，不维护易漏项的全局选择器名单。圆形与胶囊明确保持 `round`；原生窗口圆角交给 AppKit。聊天输入框保留已确认的固定圆弧端帽，多行增长不改变端帽形状。
 
@@ -25,7 +25,21 @@
 
 `color-icon-muted` 只用于图标，辅助文字使用 `color-secondary`；`color-blue` 用于焦点和图形，链接使用 `color-blue-text`，白字实体填充与选中状态使用 `color-accent-fill`。危险提示使用 `color-danger-text`，白字最终确认使用 `color-danger-fill`。中性、链接与普通主操作文字按实际背景检查至少 4.5:1；常态危险色按已确认的 Apple 默认鲜艳红显示，增强对比度模式再满足 4.5:1 配对，见 `packages/ui/tests/design-contrast.test.ts`；语义按钮、滚动和布局细则见 [界面约束](interface-guidelines.md)，选择依据见 [工程与设计维护规范](engineering-guidelines.md)。
 
+## 跨平台字体
+
+两端统一从 `tokens.css` 导入 `latin-fonts.css` 与 `chinese-fonts.css`。无衬线栈先用 Apple 原生 `-apple-system` / `BlinkMacSystemFont` 与 `PingFang SC`；这些平台字体不可用时，英文与数字命中共享的 `Velin Inter`，中文命中共享的 `Velin Han Sans`，系统字体作为加载失败或未覆盖字符的回退。按字体可用性选择，不在 React 中探测 UA 或改变 SSR 字体类，也不依赖客户端 Effect 才启用字体。微软雅黑、等线仅作末端回退，不作为主要视觉字体。
+
+`Velin Han Sans` 是 Adobe Source Han Sans SC 2.005 的 OFL 子集修改版，已改名以避开上游保留名称。它只声明中文、全角字符与相关标点，保留 400–700 连续字重，不替换英文数字；等宽栈使用具名 Latin 字体，再依次回退至苹方与同一共享中文字库。`Velin Inter` 是 Inter 4.1 的西文子集，覆盖英文、数字、扩展 Latin、组合重音与常用标点，保留真实斜体、400–700 连续字重和 14–32 光学尺寸；`font-optical-sizing: auto` 随文字字号选择细节。代码英文保持等宽字体，不使用 Inter。公式仍用 KaTeX 数学字体，图表文字引用 `font-sans`。所有页面、表单、按钮、菜单与 Markdown 继承这两个令牌，不另建字体体系。
+
+采用自托管 WOFF2 可变字体：稳定的 UI 常用字与正文常用汉字分别缓存，其余受支持汉字按互斥 `unicode-range` 拆分，包含字库支持的罕见字；浏览器只下载当前内容需要的分片。使用 `font-display: swap` 及时显示回退文字，不阻塞首屏；汉字主要为一字宽，Inter 保留上游字宽与 kerning，再配合既有明确行高降低重排，但不承诺字体失败或切换时绝无布局变化。Inter 正体与斜体独立按需加载。没有全局 preload，避免 Apple 下载不用的字库与一次性加载大量分片；西文加载前后的字宽仍可能不同，不为未经测量的系统 fallback 编造统一的度量覆盖值。
+
+Next.js 与 Vite 直接处理共享 CSS 的相对资源路径，输出带内容哈希的字体资源；Web 利用 Next 静态资源长期缓存，Electron 从构建目录本地读取，无外部字体请求、无额外 IPC 或资源服务。失败时沿原生系统字体栈回退，字号、行高、字重层级保持一致。字体来源、授权与再生成方法见 [字体资源说明](../packages/ui/fonts/README.md)。
+
+复制成功的状态保留时长由 UI 的 `clipboard-feedback.ts` 统一提供；文字按钮、图标和代码块引用同一值，不把 JavaScript 计时器写成无人读取的 CSS 令牌。
+
 ## 组件与布局
+
+聊天输出使用 `type-reading`、`type-reading-code` 与三级 reading 标题档，行高引用 `line-height-reading`。正文、用户消息与对话输入共用 reading 字号，对话输入行高单独按控件定标；认证字段保持自己的 input 档。标题层级、段落和列表多段间距由 `features/chat/assistant-markdown.css` 维护。代码保留缩进与原始行，宽代码、表格和公式局部滚动。Mermaid 使用独立中性浅色画布，属于与代码高亮类似的内容配色例外；外框和辅助文字继续跟随主题。
 
 页面卡片没有独立定宽：先选择内容列，再让同列的标题、分组、身份卡和列表卡共享左右边线。列宽与弹窗宽度均为上限，实际宽度受父容器和安全留白限制。
 

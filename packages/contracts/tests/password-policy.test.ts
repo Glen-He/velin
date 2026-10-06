@@ -4,7 +4,7 @@ import {
   isValidNewPassword,
   passwordPolicy,
   newPasswordError,
-} from '../src/policy.ts'
+} from '@velin/contracts/policy'
 
 test('new passwords retain the product length range across all entry points', () => {
   assert.deepEqual(passwordPolicy, { minimum: 8, maximum: 32 })

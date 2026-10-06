@@ -59,6 +59,23 @@ test('system dark mode and explicit dark mode resolve the same palette', () => {
   assert.deepEqual(blocks[1], blocks[2])
 })
 
+test('danger icon hover pairs danger foreground and background without overriding disabled state', () => {
+  const panelCss = readFileSync(
+    new URL('../src/panel.css', import.meta.url),
+    'utf8',
+  )
+  const hover = panelCss.match(
+    /\.panel-icon-action\[data-tone='danger'\]:hover:not\(:disabled\)\s*\{([^}]+)\}/,
+  )?.[1]
+  assert.ok(hover, 'danger hover must exclude disabled controls')
+  assert.match(hover, /background:\s*var\(--color-danger-soft\);/)
+  assert.match(hover, /color:\s*var\(--color-danger-text\);/)
+  assert.match(
+    panelCss,
+    /\.panel-icon-action:disabled\s*\{[^}]*color:\s*var\(--color-secondary\);/,
+  )
+})
+
 test('default danger roles use the Apple system red without darkening', () => {
   assert.equal(blocks[0]['--color-danger'], '#ff383c')
   assert.equal(blocks[0]['--palette-dark-color-danger'], '#ff4245')

@@ -45,12 +45,14 @@
   --surface-radius-field: var(--radius-field);
   --surface-radius-control: var(--radius-control);
   --composer-control-size: var(--control-icon-default);
-  --composer-line-box-height: 20px;
-  --composer-line-height: 1.35;
+  --composer-line-box-height: calc(
+    var(--composer-font-size) * var(--composer-line-height)
+  );
+  --composer-line-height: var(--line-height-body);
   --composer-shell-min-height: 48px;
   --composer-shell-padding: var(--space-3);
   --composer-shell-radius: 24px;
-  --composer-font-size: var(--type-input);
+  --composer-font-size: var(--type-reading);
   --chat-content-max-width: var(--layout-reading-max-width);
   /* 相对主区域而不是窗口：侧边栏宽度、窗口尺寸都不参与这里的计算。 */
   --chat-content-inline-padding: clamp(var(--space-7), 6%, 80px);
@@ -80,7 +82,8 @@ body {
 
 button,
 input,
-textarea {
+textarea,
+select {
   font: inherit;
 }
 

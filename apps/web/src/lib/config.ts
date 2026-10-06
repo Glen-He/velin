@@ -33,10 +33,7 @@ const environmentSchema = z
             ),
         ),
       ),
-    DATABASE_URL: z
-      .string()
-      .min(1)
-      .default('postgresql://glen@localhost:5432/velin_dev'),
+    DATABASE_URL: z.url({ protocol: /^postgres(?:ql)?$/ }),
     BETTER_AUTH_SECRET: z.string().min(32),
     APP_URL: z.url().default('http://localhost:3000'),
     PASSKEY_RP_ID: z.string().min(1).default('localhost'),

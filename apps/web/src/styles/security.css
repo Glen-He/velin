@@ -5,6 +5,8 @@
   );
   margin: 0 auto;
   padding: var(--space-14) 0;
+  animation: content-reveal var(--motion-duration-content)
+    var(--motion-ease-feedback);
 }
 
 html:has(.security-page) {
@@ -37,9 +39,11 @@ html:has(.security-page) {
 }
 
 .security-header h1 {
+  margin-top: 0;
   margin-bottom: 0;
   font-size: var(--type-page);
-  letter-spacing: -0.03em;
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.025em;
 }
 
 .security-state {
@@ -276,16 +280,6 @@ html:has(.security-page) {
   background: var(--color-sunken);
   font-size: var(--type-control);
   text-align: center;
-}
-
-.security-page {
-  animation: content-reveal var(--motion-duration-content)
-    var(--motion-ease-feedback);
-}
-.security-header h1 {
-  margin-top: 0;
-  font-weight: var(--weight-semibold);
-  letter-spacing: -0.025em;
 }
 
 .security-back-button {

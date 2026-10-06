@@ -2,15 +2,24 @@
 @import './motion.css';
 @import './text-action.css';
 @import './panel.css';
+@import './chinese-fonts.css';
+@import './latin-fonts.css';
 
 :root {
   --font-sans:
-    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Segoe UI',
-    sans-serif;
-  --font-mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+    -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Velin Inter',
+    'Velin Han Sans', system-ui, 'Segoe UI', Roboto, 'Noto Sans',
+    'Microsoft YaHei', DengXian, sans-serif;
+  font-optical-sizing: auto;
+  /* 具名字体先匹配各自字形，避免泛型等宽字体的系统中文回退抢先于共享字库。 */
+  --font-mono:
+    'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', 'DejaVu Sans Mono',
+    'PingFang SC', 'Velin Han Sans', monospace;
   --line-height-tight: 1.2;
   --line-height-body: 1.5;
-  --line-height-reading: 1.7;
+  --line-height-reading: 1.625;
+  --line-height-reading-heading: 1.4;
+  --line-height-reading-code: 1.6;
 
   /* 间距按控件、关联内容、分组与页面分档，语义别名引用底层标尺。 */
   --space-1: 2px;
@@ -46,6 +55,11 @@
   --type-control: 0.8125rem;
   --type-body: 0.875rem;
   --type-input: 0.9375rem;
+  --type-reading: 1rem;
+  --type-reading-code: 0.875rem;
+  --type-reading-title: 1.5rem;
+  --type-reading-heading: 1.25rem;
+  --type-reading-subheading: 1.125rem;
   --type-subtitle: 1rem;
   --type-section: 1.25rem;
   --type-page: 1.5rem;
@@ -116,7 +130,6 @@
   --motion-duration-overlay: 180ms;
   --motion-step-distance: 14px;
   --motion-ease-feedback: ease-out;
-  --motion-duration-copied: 1600ms;
   --motion-ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
 
   /* 圆弧与连续曲率的视觉切角不同：网页独立选档，不引用桌面矩形半径。 */

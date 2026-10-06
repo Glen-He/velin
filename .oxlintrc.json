@@ -1,10 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": [
-    "react",
-    "typescript",
-    "oxc"
-  ],
+  "plugins": ["react", "typescript", "oxc"],
   "rules": {
     "id-match": [
       "error",
@@ -16,6 +12,31 @@
     ],
     "no-console": "error",
     "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "error",
+    "react/forbid-dom-props": [
+      "error",
+      {
+        "forbid": [
+          {
+            "propName": "title",
+            "disallowedFor": ["button"],
+            "message": "Use accessible names for actions; reserve tooltips for truncated content."
+          }
+        ]
+      }
+    ],
+    "react/forbid-component-props": [
+      "error",
+      {
+        "forbid": [
+          {
+            "propName": "title",
+            "disallowedFor": ["Button", "ButtonLink"],
+            "message": "Use accessible names for actions; reserve tooltips for truncated content."
+          }
+        ]
+      }
+    ],
     "react/only-export-components": [
       "warn",
       {
@@ -25,17 +46,13 @@
   },
   "overrides": [
     {
-      "files": [
-        "apps/web/src/lib/logging.ts"
-      ],
+      "files": ["apps/web/src/lib/logging.ts"],
       "rules": {
         "no-console": "off"
       }
     },
     {
-      "files": [
-        "apps/web/src/app/**/*.tsx"
-      ],
+      "files": ["apps/web/src/app/**/*.tsx"],
       "rules": {
         "react/only-export-components": [
           "warn",

@@ -177,6 +177,8 @@
   overflow: auto;
   padding-top: var(--titlebar-height);
   background: var(--background);
+  animation: content-reveal var(--motion-duration-content)
+    var(--motion-ease-feedback);
 }
 
 .settings-panel {
@@ -251,7 +253,7 @@
 .sessions-list {
   display: flex;
   flex-direction: column;
-  max-height: 320px;
+  height: calc(var(--panel-row-height) * 2 + var(--line-width-divider));
   overflow-y: auto;
 }
 
@@ -549,17 +551,9 @@
 .card-dialog-actions {
   margin-top: var(--space-7);
 }
-.sessions-list {
-  height: calc(var(--panel-row-height) * 2 + var(--line-width-divider));
-}
 .sessions-loading {
   min-height: var(--panel-row-height);
   display: flex;
   align-items: center;
   margin: 0;
-}
-
-.settings-content {
-  animation: content-reveal var(--motion-duration-content)
-    var(--motion-ease-feedback);
 }

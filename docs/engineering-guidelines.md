@@ -24,6 +24,12 @@ AGENTS.md 是日常开发规范入口，专项文档提供设计与架构细则�
 
 令牌按底层标尺、语义别名与组件几何分层，参考 [Design Tokens Format](https://www.designtokens.org/tr/2025.10/format/) 的分组与引用思想。现有 CSS 能表达关系时，不为格式一致额外引入生成器。
 
+聊天采用共享跨平台字体策略与独立阅读令牌，正文、用户消息与对话输入共用字号；代码使用等宽档，标题分级，保留现有阅读列宽与字号设置。参考 [OpenAI 插件 UI 指南](https://developers.openai.com/plugins/concepts/ui-guidelines#typography) 的系统字体与层级原则，以及 [VASA 的网页样式观察](https://inspiration.vasa.works/item/website-styles/chatgpt) 中的正文与标题档位；这些来源不是 ChatGPT 回答区域的完整官方像素规范，截图也不能证明其 CSS 数值。中文正文行高适当宽于紧凑输入，段落之间保留一行字高的间距；字体、行高与段距一起校准，不能仅缩小字号。
+
+新增字体资源先生成文件再接入 CSS import；验证生产构建之外，也检查正在运行的 Vite 开发入口与字体 URL。开发服务若在文件生成前缓存了失败解析，应重启服务并复核实际响应，不能仅凭文件存在认定界面已恢复。
+
+验证中比较中文、英文、嵌套列表、长代码、宽表格、公式、深色主题与放大字号；不能只看一句短文字。Streamdown 已承担流式解析与高亮，继续使用其官方 CJK、数学和 Mermaid 插件，避免为排版问题替换解析框架；图表按需加载，解析失败保留源内容。
+
 ## 布局取舍
 
 [Apple HIG Layout](https://developer.apple.com/design/human-interface-guidelines/layout) 强调内容分组、边线一致、控制与内容的关系，以及窗口和文字大小变化下的适应性；它没有为本项目的网页和 Electron 卡片规定统一像素宽度。采用这些原则，再根据真实字段、控件和阅读内容选择预算。旧值和参考产品截图都只能作为候选，不能直接成为规范。

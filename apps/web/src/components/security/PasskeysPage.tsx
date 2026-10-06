@@ -7,7 +7,7 @@ import { useState } from 'react'
 import { authClient } from '../../lib/auth/client'
 import { LoadingState } from '../LoadingState'
 import { useGatedActions } from './gated-actions'
-import { usePasskeyList } from './passkey-list'
+import { usePasskeyList } from './usePasskeyList'
 
 function formatAddedAt(value: string) {
   if (!value) {

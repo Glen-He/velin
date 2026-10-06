@@ -1,0 +1,23 @@
+{
+  "upstream": "https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip",
+  "sourceSha256": "9883fdd4a49d4fb66bd8177ba6625ef9a64aa45899767dde3d36aa425756b11e",
+  "family": "Velin Inter",
+  "weight": [400, 700],
+  "opticalSize": [14, 32],
+  "subsets": [
+    {
+      "file": "inter-latin-normal-ce634496c09b.woff2",
+      "style": "normal",
+      "sha256": "ce634496c09ba5b60b4c7b969f9f342adf6b1ed3a7b2f187453b1796ec708f55",
+      "bytes": 138584,
+      "unicodeRange": "U+0,U+20-7E,U+A0-AC,U+AE-148,U+14A-1C3,U+1C5-24F,U+300-304,U+306-30A,U+30C,U+30F,U+313,U+315,U+31B,U+323,U+326-328,U+32C,U+337-338,U+342-343,U+346-36F,U+1E00-1E9B,U+1E9D-1EFF,U+2000-200B,U+2010-2027,U+202F-2055,U+2057,U+205F,U+20A0-20AF,U+20B1-20B5,U+20B8-20BA,U+20BC-20C0,U+2122"
+    },
+    {
+      "file": "inter-latin-italic-87e99a7f4cae.woff2",
+      "style": "italic",
+      "sha256": "87e99a7f4cae27decc02a9dcc9ee314242ebf6a055c006fe15d1f288354834f7",
+      "bytes": 148940,
+      "unicodeRange": "U+0,U+20-7E,U+A0-AC,U+AE-148,U+14A-1C3,U+1C5-24F,U+300-304,U+306-30A,U+30C,U+30F,U+313,U+315,U+31B,U+323,U+326-328,U+32C,U+337-338,U+342-343,U+346-36F,U+1E00-1E9B,U+1E9D-1EFF,U+2000-200B,U+2010-2027,U+202F-2055,U+2057,U+205F,U+20A0-20AF,U+20B1-20B5,U+20B8-20BA,U+20BC-20C0,U+2122"
+    }
+  ]
+}

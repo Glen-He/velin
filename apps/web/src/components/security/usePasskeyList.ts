@@ -1,7 +1,6 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { authClient } from '../../lib/auth/client'
 import { createPasskeyList } from './passkey-list-store'
-export type { PasskeyInfo } from './passkey-data'
 
 export function usePasskeyList(userId: string | null) {
   const [store] = useState(() =>

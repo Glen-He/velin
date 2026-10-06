@@ -12,6 +12,7 @@ import type { Conversation, Message } from '@velin/contracts/chat'
 import Composer from './Composer'
 import { chatKeyAction } from './keyboard-policy'
 import { chatLimits } from '@velin/contracts/policy'
+import { copyFeedbackDurationMs } from '@velin/ui/clipboard-feedback.ts'
 
 type ChatViewProps = {
   conversation?: Conversation
@@ -66,7 +67,10 @@ function MessageBubble({
       return
     }
 
-    const timer = window.setTimeout(() => setCopyFeedback(0), 1600)
+    const timer = window.setTimeout(
+      () => setCopyFeedback(0),
+      copyFeedbackDurationMs,
+    )
     return () => window.clearTimeout(timer)
   }, [copyFeedback])
 
@@ -175,7 +179,6 @@ function MessageBubble({
                 className="message-editor-button"
                 type="button"
                 aria-label="取消编辑"
-                title="取消"
                 onClick={cancelEditing}
               >
                 <X aria-hidden="true" />
@@ -185,7 +188,6 @@ function MessageBubble({
                 type="submit"
                 disabled={!canSubmitEdit}
                 aria-label="发送修改后的消息"
-                title="发送"
               >
                 <ArrowUp aria-hidden="true" />
               </button>
@@ -218,7 +220,6 @@ function MessageBubble({
               type="button"
               disabled={!message.content}
               aria-label={copyFeedback > 0 ? '已复制' : '复制消息'}
-              title="复制"
               onClick={() => void copyMessage()}
             >
               {copyFeedback > 0 ? (
@@ -232,8 +233,9 @@ function MessageBubble({
                 className="message-action-button"
                 type="button"
                 disabled={isStreaming}
-                aria-label="编辑消息"
-                title={isStreaming ? '请先停止当前回复' : '编辑'}
+                aria-label={
+                  isStreaming ? '编辑消息（请先停止当前回复）' : '编辑消息'
+                }
                 onClick={() => {
                   setEditValue(message.content)
                   setIsEditing(true)
@@ -454,7 +456,6 @@ function ChatView({
               }`}
               type="button"
               aria-label={isStreaming ? '正在生成，跳到底部' : '跳到底部'}
-              title={isStreaming ? '正在生成，跳到底部' : '跳到底部'}
               onClick={scrollToBottom}
             >
               {isStreaming ? (

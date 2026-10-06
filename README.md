@@ -58,6 +58,8 @@ pnpm dev
 
 启动前在 `apps/web/.env.local` 设置本机 `DATABASE_URL` 与随机 `BETTER_AUTH_SECRET`。`pnpm dev` 先编译共享协议，然后启动 Next.js（3000）和 Electron 的 Vite 渲染服务（5173），同时监听共享协议变更。网页登录与 HTTP API 现在使用同一来源，不再另启 5174 服务。`APP_URL` 是浏览器可访问的统一 Web 地址；桌面 Main 使用 `VELIN_API_SERVER_URL` 选择同一服务，默认 `http://localhost:3000`。
 
+`DATABASE_URL` 必须显式配置为 PostgreSQL 连接地址；缺失、空值或协议不正确会阻止 Web 服务启动，不默认连接开发者的本机数据库。
+
 只启动网页可用 `pnpm dev:web`，只启动客户端可用 `pnpm dev:desktop`，后者需要已有可用 Web 服务。Electron 缺少下载的运行时文件时，在桌面应用目录运行 `pnpm exec electron --version` 检查并完成安装；只允许已评估依赖执行构建脚本。
 
 Google 登录需要配齐 `GOOGLE_CLIENT_ID` 和 `GOOGLE_CLIENT_SECRET`，回调地址使用 `APP_URL` 下的 `/api/auth/callback/google`。邮箱注册保留可选邀请码输入框，当前暂未启用，不影响注册。开发 console 邮件通过显式开发回码提供验证码，终端只记录结构化事件；生产禁止 console 传输和开发回码。
@@ -72,6 +74,10 @@ Google 与邮箱验证码只登录已有账号；注册使用邮箱和密码，�
 
 服务端校验会话、消息和预算，默认每账号每分钟 5 次、每日 30 次，全局每日 300 次。对应配置为 `CHAT_MINUTE_LIMIT_PER_USER`、`CHAT_DAILY_LIMIT_PER_USER` 与 `CHAT_DAILY_LIMIT_GLOBAL`，按 UTC 日期计算，调用记录保存到 PostgreSQL。对话内容目前只在客户端内存，关闭后不恢复；本次架构迁移不引入持久化或跨设备同步。
 
+字体由两端共享令牌统一：Apple 使用原生 UI 字体与苹方，其他平台英文与数字使用 Inter，中文使用思源黑体，均为随应用自托管的 WOFF2 子集，字体按字符范围加载，无运行时 CDN。授权和维护方法见 [字体资源说明](packages/ui/fonts/README.md)。
+
+回复使用 Streamdown 渲染流式 Markdown，支持中文标点附近的加粗、GFM 列表与表格、代码高亮、KaTeX 公式和按需加载的 Mermaid 图表。正文、标题与代码采用独立阅读档位；宽代码、表格和公式局部横向滚动。图表加载或解析失败保留源内容，远程图片默认仅显示文字引用。视觉标尺与使用约束见 [设计系统](docs/design-system.md) 和 [界面约束](docs/interface-guidelines.md)。
+
 ## 构建与运行
 
 ```bash
@@ -82,6 +88,8 @@ pnpm start
 `pnpm build` 构建共享协议、Next.js 和桌面资源；`pnpm start` 运行构建后的 Web Node 服务。Web 部署须配置生产数据库、HTTPS `APP_URL`、SMTP、Google OAuth 与模型凭据，在受控反向代理处终止 HTTPS。只有明确的代理 IP 可以设置 `TRUSTED_PROXY_ADDRESSES`。
 
 Web 必须使用项目启动入口，以真实 socket 覆盖伪造的地址头，保护限流；不要绕过它直接运行 `next start/dev`。此部署方式不使用 standalone 输出或 serverless 函数，部署取舍见 [模块与职责](docs/architecture.md)。桌面构建产物位于 `apps/desktop/dist` 与 `dist-electron`，当前构建不生成安装包。
+
+桌面 HTML 默认使用严格 CSP；Vite 开发服务只放行实际 HMR WebSocket 来源，并为 React 前导脚本添加 nonce。所有构建产物均不信任开发服务器，即使使用 `--mode development` 构建也不放宽策略。
 
 ## 数据库与验证
 

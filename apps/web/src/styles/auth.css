@@ -258,6 +258,8 @@ p {
 }
 
 .auth-field-input[aria-label]::placeholder {
+  color: var(--color-secondary);
+  opacity: 1;
   letter-spacing: normal;
 }
 
@@ -556,8 +558,4 @@ button:disabled {
 
 .auth-code-result .pill-button {
   margin-top: var(--space-9);
-}
-.auth-field-input[aria-label]::placeholder {
-  color: var(--color-secondary);
-  opacity: 1;
 }

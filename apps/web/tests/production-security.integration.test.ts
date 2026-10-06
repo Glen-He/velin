@@ -39,7 +39,7 @@ test(
       { name: email, email, emailVerified: true },
       { method: 'email-password' },
     )
-    const password = 'Velin production fixture phrase 92482!'
+    const password = 'Velin-production-fixture-92482!'
     try {
       await ctx.internalAdapter.createAccount({
         accountId: user.id,

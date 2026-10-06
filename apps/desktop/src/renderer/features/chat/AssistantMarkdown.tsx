@@ -1,15 +1,35 @@
 import { Check, Copy } from 'lucide-react'
-import { memo } from 'react'
+import { cloneElement, isValidElement, memo } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import { code } from '@streamdown/code'
-import { Streamdown } from 'streamdown'
+import { cjk } from '@streamdown/cjk'
+import { copyFeedbackDurationMs } from '@velin/ui/clipboard-feedback.ts'
+import { createMathPlugin } from '@streamdown/math'
+import {
+  CodeBlock,
+  CodeBlockCopyButton,
+  Streamdown,
+  useIsCodeFenceIncomplete,
+} from 'streamdown'
 import type {
   Components,
   ControlsConfig,
+  ExtraProps,
   IconMap,
   StreamdownTranslations,
 } from 'streamdown'
+import 'katex/dist/katex.min.css'
+import './assistant-markdown.css'
+import AssistantDiagram from './AssistantDiagram'
 
-const streamdownPlugins = { code }
+const streamdownPlugins = {
+  code,
+  cjk,
+  math: createMathPlugin({
+    singleDollarTextMath: true,
+    errorColor: 'var(--color-secondary)',
+  }),
+}
 const streamdownControls = {
   code: { copy: true, download: false },
   table: false,
@@ -39,7 +59,58 @@ function externalHttpUrl(value: string | undefined) {
   }
 }
 
+function MarkdownCode({
+  children,
+  className,
+  'data-block': isBlock,
+}: ComponentProps<'code'> & ExtraProps & { 'data-block'?: boolean }) {
+  const incomplete = useIsCodeFenceIncomplete()
+  if (!isBlock || typeof children !== 'string')
+    return <code className={className}>{children}</code>
+  const language = className?.match(/\blanguage-([^\s]+)/)?.[1] ?? ''
+  return (
+    <CodeBlock
+      code={children.replace(/\n$/, '')}
+      language={language}
+      isIncomplete={incomplete}
+      lineNumbers={false}
+    >
+      {/* 复用上游复制与反馈生命周期，仅移除重复的原生操作提示。 */}
+      <CodeBlockCopyButton title={undefined} timeout={copyFeedbackDurationMs} />
+    </CodeBlock>
+  )
+}
+
 const markdownComponents = {
+  code: MarkdownCode,
+  pre({ children }) {
+    if (
+      !isValidElement<{
+        className?: string
+        children?: ReactNode
+        'data-block'?: boolean
+      }>(children)
+    )
+      return children
+    if (
+      children.props.className?.split(/\s+/).includes('language-mermaid') &&
+      typeof children.props.children === 'string'
+    )
+      return <AssistantDiagram source={children.props.children} />
+    return cloneElement(children, { 'data-block': true })
+  },
+  table({ children, node: _node, ...props }) {
+    return (
+      <div
+        className="markdown-table-scroll"
+        role="region"
+        aria-label="表格，可左右滚动查看"
+        tabIndex={0}
+      >
+        <table {...props}>{children}</table>
+      </div>
+    )
+  },
   a({ href, children }) {
     const url = externalHttpUrl(href)
     if (!url) return <span>{children}</span>

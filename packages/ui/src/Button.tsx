@@ -66,7 +66,10 @@ export function Button({
   style,
   type = 'button',
   ...props
-}: Appearance & ButtonHTMLAttributes<HTMLButtonElement>) {
+}: Appearance &
+  Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'title'> & {
+    title?: never
+  }) {
   return (
     <button
       {...props}
@@ -90,7 +93,10 @@ export function ButtonLink({
   className,
   style,
   ...props
-}: Appearance & AnchorHTMLAttributes<HTMLAnchorElement>) {
+}: Appearance &
+  Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'title'> & {
+    title?: never
+  }) {
   return (
     <a
       {...props}

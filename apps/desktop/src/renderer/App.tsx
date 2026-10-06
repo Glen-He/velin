@@ -277,7 +277,6 @@ function App() {
             type="button"
             aria-label={isSidebarOpen ? '隐藏侧边栏' : '显示侧边栏'}
             aria-expanded={isSidebarOpen}
-            title={isSidebarOpen ? '隐藏侧边栏' : '显示侧边栏'}
             onClick={isSidebarOpen ? () => hideSidebar() : showSidebar}
           >
             {isSidebarOpen ? (
