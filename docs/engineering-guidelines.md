@@ -16,6 +16,12 @@ AGENTS.md 是日常开发规范入口，专项文档提供设计与架构细则�
 
 圆角参考 [Apple WWDC25 设计说明](https://developer.apple.com/videos/play/wwdc2025/356/) 对固定矩形、胶囊和嵌套同心圆角的区分。客户端使用 CSS squircle 接近连续曲率的视觉方向；[MDN corner-shape](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/corner-shape) 定义的是 superellipse，并不承诺等同 AppKit 的原生曲线。该属性不继承，必须与组件半径一起维护；网页不依赖它，使用独立圆弧档位。比较同角色控件的切角程度与内缩，不按两端半径数值是否相等判断一致性。
 
+描边几何依据 [CSS Borders 4 的 corner shaping](https://drafts.csswg.org/css-borders-4/#corner-shaping)：内缘跟随外缘，保持近似一致的距离；不是把内层矩形等比缩小。[Chromium 的实现说明](https://developer.chrome.com/blog/implementing-corner-shape#borders_and_shadows) 区分 border、outline 和 shadow 的偏移方式，不能把扩张阴影当作等厚描边。没有“16px 以下必须换圆弧”或“加大 2–4px 即修复”的官方规则。
+
+独立嵌套表面的协调参考 [Apple concentric](https://developer.apple.com/documentation/swiftui/edge/corner/style/concentric)：内层半径由外层半径减内缩推导；只适用于位置相邻的嵌套轮廓，不把普通字段与远处的弹窗外框强行同心。[Figma iOS 平滑预设](https://help.figma.com/hc/en-us/articles/360050986854-Adjust-corner-radius-and-smoothing) 的 60% 是该工具的参数，不是 CSS superellipse 参数或 Apple 跨平台强制值。当前保留浏览器原生 CSS 曲线，避免混合两套轮廓绘制。
+
+焦点方面，[Apple HIG](https://developer.apple.com/design/human-interface-guidelines/focus-and-selection/) 通常建议原生字段焦点环；Velin 字段固定使用细线边框并在原边界上变色是产品选择，不宣称复刻原生焦点环。按钮和其他键盘控件仍保留可见焦点。完整约束见 [轮廓、描边与焦点](design-system.md#轮廓描边与焦点)，参数以共享令牌和组件为准。
+
 按钮交互参考 [Apple HIG Buttons](https://developer.apple.com/design/human-interface-guidelines/buttons) 的动作层级与输入方式反馈；细指针悬停反馈、触控命中区和禁用状态分开处理。等宽分组参考 [Apple 自定义布局示例](https://developer.apple.com/documentation/swiftui/composing-custom-layouts-with-swiftui) 按组内最宽内容测量并在受限空间重排的原则。项目的字数档、字号和高度由共享实现决定，不能表述为 Apple 强制的 CSS 尺寸。
 
 动效参考 [Apple HIG Motion](https://developer.apple.com/design/human-interface-guidelines/motion)：用于明确反馈和上下文，动作简洁、与直接操作一致并可减少；按局部反馈、内容、步骤、弹层和直接操作分类，不把所有地方套一种转场。客户端优先，网页的 View Transitions 与触控布局按实际能力适配。

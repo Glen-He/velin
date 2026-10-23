@@ -1,0 +1,86 @@
+name: Verify
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  server:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: velin
+          POSTGRES_PASSWORD: fixture
+          POSTGRES_DB: velin_ci_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U velin -d velin_ci_test"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      VELIN_TEST_DATABASE_URL: postgresql://velin:fixture@localhost:5432/velin_ci_test
+      DATABASE_URL: postgresql://velin:fixture@localhost:5432/velin_ci_test
+      BETTER_AUTH_SECRET: ci-fixture-secret-at-least-32-characters
+      APP_URL: https://velin.example.test
+      GOOGLE_CLIENT_ID: fixture
+      GOOGLE_CLIENT_SECRET: fixture
+      DEEPSEEK_API_KEY: fixture
+      EMAIL_TRANSPORT: smtp
+      SMTP_HOST: 127.0.0.1
+      SMTP_PORT: '9'
+      SMTP_USER: fixture
+      SMTP_PASSWORD: fixture
+      SMTP_SECURE: 'false'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24.21.0
+          package-manager-cache: false
+      - run: corepack enable
+      - run: corepack prepare pnpm@12.6.0 --activate
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm audit --prod --audit-level=low
+      - run: pnpm test:ci
+      - run: pnpm build
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2025, macos-15]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    env:
+      VELIN_API_SERVER_URL: https://velin.example.test
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24.21.0
+          package-manager-cache: false
+      - run: corepack enable
+      - run: corepack prepare pnpm@12.6.0 --activate
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @velin/contracts build
+      - run: pnpm --filter @velin/desktop test
+      - run: pnpm --filter @velin/desktop test:native
+      - run: pnpm --filter @velin/desktop package:dir
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: desktop-unsigned-${{ matrix.os }}
+          path: apps/desktop/release/
+          retention-days: 7
