@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -9,7 +9,11 @@ import type { ViteDevServer } from 'vite'
 import desktopConfig from '../vite.config.ts'
 
 test('renderer builds never trust development servers, including development build mode', async (context) => {
-  const root = await mkdtemp(join(tmpdir(), 'velin-renderer-csp-'))
+  // Windows CI 的 TEMP 是 8.3 短路径（如 RUNNER~1），Vite 会拒绝提供短路径文件，
+  // 因此夹具根目录先解析为真实长路径。
+  const root = await mkdtemp(
+    join(await realpath(tmpdir()), 'velin-renderer-csp-'),
+  )
   let server: ViteDevServer | undefined
   context.after(async () => {
     await server?.close()
