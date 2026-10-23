@@ -1,5 +1,6 @@
 import {
   ChevronLeft,
+  Brain,
   Info,
   MessageCircle,
   Palette,
@@ -27,6 +28,7 @@ const navigationGroups: Array<{ label: string; items: NavigationItem[] }> = [
       { id: 'general', icon: SlidersHorizontal, label: '通用' },
       { id: 'appearance', icon: Palette, label: '外观' },
       { id: 'chat', icon: MessageCircle, label: '对话' },
+      { id: 'memory', icon: Brain, label: '记忆' },
     ],
   },
   {
@@ -40,6 +42,11 @@ const searchableSettings: Array<{
   section: SettingsSection
   terms: string
 }> = [
+  {
+    label: '个人记忆',
+    section: 'memory',
+    terms: '记忆 偏好 长期 管理 删除 更正',
+  },
   {
     label: '安全设置',
     section: 'account',
@@ -100,7 +107,7 @@ export function SettingsNavigation({
             </span>
             <span>返回</span>
           </button>
-          <label className="settings-search-field no-drag">
+          <label className="settings-search-field field-search no-drag">
             <span className="settings-navigation-icon" aria-hidden="true">
               <Search />
             </span>

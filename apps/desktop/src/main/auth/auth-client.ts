@@ -1,12 +1,14 @@
 import { serviceOrigin } from '@velin/contracts/service-url'
-import { errorMessage } from '@velin/contracts/error-copy'
+import { errorMessage, UserFacingError } from '@velin/contracts/error-copy'
 import { isRecord } from '@velin/contracts/value'
 import { toDesktopSessions } from './session-dto'
+import { createCredentialScope } from './request-scope'
 import { electronClient } from '@better-auth/electron/client'
 import type { ElectronClientOptions } from '@better-auth/electron/client'
 import { storage } from '@better-auth/electron/storage'
 import { createAuthClient } from 'better-auth/client'
-import { app } from 'electron'
+import { app, safeStorage } from 'electron'
+import { protectedStorage } from './protected-storage'
 import type { BetterAuthClientPlugin, User } from 'better-auth'
 import type {
   AuthFlow,
@@ -16,8 +18,11 @@ import type {
 } from '@velin/contracts/auth-protocol'
 import type { SessionClientMetadata } from '@velin/contracts/session-client'
 
+declare const __VELIN_SERVICE_URL__: string | null
+
 export const serviceUrl = serviceOrigin(
-  process.env.VELIN_API_SERVER_URL ?? 'http://localhost:3000',
+  (app.isPackaged ? __VELIN_SERVICE_URL__ : process.env.VELIN_API_SERVER_URL) ??
+    'http://localhost:3000',
   !app.isPackaged,
 )
 
@@ -56,10 +61,16 @@ const electronClientOptions = {
   signInURL: `${serviceUrl}/sign-in`,
   protocol: { scheme: 'com.velin.desktop' },
   callbackPath: '/auth/callback',
-  storage: storage({
-    projectName: 'Velin',
-    configName: 'auth-session',
-  }),
+  storage: protectedStorage(
+    storage({
+      projectName: 'Velin',
+      configName: 'auth-session',
+    }),
+    () =>
+      safeStorage.isEncryptionAvailable() &&
+      (process.platform !== 'linux' ||
+        safeStorage.getSelectedStorageBackend() !== 'basic_text'),
+  ),
   storagePrefix: 'velin-auth',
   cookiePrefix: 'velin-auth',
   channelPrefix: 'velin-auth-internal',
@@ -88,8 +99,10 @@ function createDesktopAuthClient(signInURL: string) {
           isRecord(context.data.user)
         ) {
           const user = toAuthUser(context.data.user)
-          if (user.id)
+          if (user.id) {
+            credentialScope.invalidate()
             authenticationListeners.forEach((listener) => listener(user))
+          }
         }
       },
     },
@@ -98,6 +111,9 @@ function createDesktopAuthClient(signInURL: string) {
 
 export const authClient = createDesktopAuthClient(
   electronClientOptions.signInURL,
+)
+export const credentialScope = createCredentialScope(() =>
+  authClient.getCookie(),
 )
 const registrationAuthClient = createDesktopAuthClient(
   `${serviceUrl}/sign-in?mode=sign-up`,
@@ -133,7 +149,7 @@ export async function getAuthenticatedUser(): Promise<AuthUser | null> {
       return null
     }
 
-    throw new Error('读取登录状态失败，请稍后重试。')
+    throw new UserFacingError('读取登录状态失败，请稍后重试。')
   }
 
   if (
@@ -175,13 +191,14 @@ export async function getInitialAuthenticatedUser(): Promise<AuthUser | null> {
 }
 
 export async function signOutAuthenticatedUser() {
+  credentialScope.invalidate()
   const result = await authClient.$fetch('/sign-out', {
     method: 'POST',
     body: {},
   })
 
   if (result.error) {
-    throw new Error('退出登录失败，请稍后重试。')
+    throw new UserFacingError('退出登录失败，请稍后重试。')
   }
 }
 
@@ -197,7 +214,7 @@ export async function updateDisplayName(name: string) {
   })
 
   if (result.error) {
-    throw new Error(
+    throw new UserFacingError(
       readProfileErrorMessage(result.error, '更新用户名失败，请稍后重试。'),
     )
   }
@@ -243,7 +260,7 @@ export async function listAuthenticatedSessions(): Promise<DesktopSession[]> {
   ])
 
   if (listResult.error) {
-    throw new Error(
+    throw new UserFacingError(
       readProfileErrorMessage(
         listResult.error,
         '读取登录设备失败，请稍后重试。',
@@ -251,7 +268,8 @@ export async function listAuthenticatedSessions(): Promise<DesktopSession[]> {
     )
   }
 
-  if (currentResult.error) throw new Error('无法确定当前登录设备，请稍后重试。')
+  if (currentResult.error)
+    throw new UserFacingError('无法确定当前登录设备，请稍后重试。')
   return toDesktopSessions(
     listResult.data,
     readCurrentSessionToken(currentResult.data),
@@ -262,7 +280,7 @@ export async function listAuthenticatedSessions(): Promise<DesktopSession[]> {
 export async function revokeSessionById(sessionId: string) {
   const sessions = await authClient.$fetch('/list-sessions', { method: 'GET' })
   if (sessions.error || !Array.isArray(sessions.data))
-    throw new Error('读取登录设备失败。')
+    throw new UserFacingError('读取登录设备失败。')
   const target = sessions.data.find(
     (item: unknown) =>
       typeof item === 'object' &&
@@ -276,7 +294,7 @@ export async function revokeSessionById(sessionId: string) {
     !('token' in target) ||
     typeof target.token !== 'string'
   ) {
-    throw new Error('该设备不存在或已退出。')
+    throw new UserFacingError('该设备不存在或已退出。')
   }
   const result = await authClient.$fetch('/revoke-session', {
     method: 'POST',
@@ -284,7 +302,7 @@ export async function revokeSessionById(sessionId: string) {
   })
 
   if (result.error) {
-    throw new Error(
+    throw new UserFacingError(
       readProfileErrorMessage(result.error, '退出该设备失败，请稍后重试。'),
     )
   }
@@ -297,7 +315,7 @@ export async function revokeOtherSessions() {
   })
 
   if (result.error) {
-    throw new Error(
+    throw new UserFacingError(
       readProfileErrorMessage(result.error, '退出其他设备失败，请稍后重试。'),
     )
   }

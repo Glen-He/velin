@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import type { SettingsViewProps } from './types'
 import { AccountSettings } from '../account/AccountSettings'
 import { AppearanceSettings } from './AppearanceSettings'
+import { MemorySettings } from './MemorySettings'
 import {
   GeneralSettings,
   ChatSettings,
@@ -53,6 +54,13 @@ function SettingsView({
       <ChatSettings
         sendOnEnter={sendOnEnter}
         onSendOnEnterChange={onSendOnEnterChange}
+      />
+    )
+  } else if (activeSection === 'memory') {
+    content = (
+      <MemorySettings
+        key={authUser?.id ?? 'anonymous'}
+        accountId={authUser?.id ?? null}
       />
     )
   } else if (activeSection === 'about') {

@@ -12,7 +12,10 @@ function request(): SendMessageRequest {
   return {
     requestId: randomUUID(),
     conversationId: randomUUID(),
-    messages: [{ role: 'user', content: '你好' }],
+    userMessageId: randomUUID(),
+    content: '你好',
+    model: 'deepseek-flash',
+    reasoningEffort: 'none',
   }
 }
 function deferred<T>() {
@@ -61,7 +64,15 @@ test('chat streams reject duplicate active conversations and validate event iden
     endpoint: 'https://api.example.test/api/chat',
     getCookie: () => 'fixture',
     onUnauthorized: () => {},
-    request: async () => source.response,
+    request: async (_url, options) => {
+      assert.equal(options?.redirect, 'error')
+      assert.equal(options?.credentials, 'omit')
+      assert.equal(
+        JSON.parse(String(options?.body)).timeZone,
+        Intl.DateTimeFormat().resolvedOptions().timeZone,
+      )
+      return source.response
+    },
   })
   assert.equal(
     runtime.start(input, (event) => events.push(event)),
@@ -85,6 +96,19 @@ test('chat streams reject duplicate active conversations and validate event iden
     conversationId: input.conversationId,
     messageId,
     delta: 'before start',
+  })
+  source.send({
+    type: 'reasoning-delta',
+    requestId: input.requestId,
+    conversationId: input.conversationId,
+    messageId,
+    delta: 'reasoning before start',
+  })
+  source.send({
+    type: 'message-complete',
+    requestId: input.requestId,
+    conversationId: input.conversationId,
+    messageId,
   })
   source.send({
     type: 'message-start',

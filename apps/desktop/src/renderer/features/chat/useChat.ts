@@ -20,5 +20,6 @@ export function useChat() {
     store,
     request: conversation ? state.requests[conversation.id] : undefined,
     error: conversation ? state.errors[conversation.id] : undefined,
+    history: conversation ? state.history[conversation.id] : undefined,
   }
 }

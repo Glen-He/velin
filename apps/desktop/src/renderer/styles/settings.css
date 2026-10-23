@@ -66,7 +66,8 @@
   height: var(--sidebar-control-height);
   align-items: center;
   gap: 9px;
-  padding: 0 var(--sidebar-item-inline-padding);
+  --search-inset-inline: var(--sidebar-item-inline-padding);
+  padding-block: 0;
   border-radius: var(--corner-sidebar-control);
   corner-shape: var(--surface-corner-shape);
   background: color-mix(in srgb, var(--text) 6%, transparent);
@@ -458,12 +459,6 @@
   outline-offset: 2px;
 }
 
-.settings-appearance-option[aria-pressed='true'] .settings-appearance-preview {
-  box-shadow:
-    0 0 0 3px var(--menu-selection),
-    0 3px 9px rgba(20, 22, 26, 0.12);
-}
-
 .settings-preview-window {
   --preview-background: #f7f7f7;
   --preview-sidebar: #e3e4e7;
@@ -471,7 +466,7 @@
   --preview-accent: #5b9ff8;
   position: absolute;
   overflow: hidden;
-  border: var(--hairline-width) solid rgba(37, 38, 43, 0.16);
+  border: var(--line-width-focus) solid rgba(37, 38, 43, 0.16);
   border-radius: var(--corner-appearance-window);
   corner-shape: var(--surface-corner-shape);
   background: var(--preview-background);
@@ -484,6 +479,11 @@
   --preview-muted: #505159;
   --preview-accent: #197ce8;
   border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* 选中状态直接着色预览窗口的既有边框，不再扩张外层阴影。 */
+.settings-appearance-option[aria-pressed='true'] .settings-preview-window {
+  border-color: var(--menu-selection);
 }
 
 .settings-preview-window.is-single {

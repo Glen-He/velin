@@ -1,6 +1,9 @@
 {
   "name": "@velin/desktop",
   "productName": "Velin",
+  "description": "AI conversation and productivity desktop client",
+  "author": "Velin contributors",
+  "license": "UNLICENSED",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -10,10 +13,13 @@
     "node": ">=24.20.0 <25"
   },
   "scripts": {
+    "package:dir": "pnpm build && node --import tsx scripts/package.ts --dir",
+    "package:release": "pnpm build && node --import tsx scripts/package.ts --release",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b",
-    "test": "node --import tsx --test tests/*.test.ts"
+    "test": "node --import tsx --test tests/*.test.ts",
+    "test:native": "node --import tsx scripts/verify-renderer-security.ts"
   },
   "dependencies": {
     "@better-auth/electron": "1.7.6",
@@ -28,8 +34,9 @@
     "@velin/ui": "workspace:*",
     "better-auth": "1.7.6",
     "conf": "15.1.0",
+    "electron-updater": "6.8.11",
     "eventsource-parser": "4.1.1",
-    "katex": "0.16.47",
+    "katex": "0.18.2",
     "lucide-react": "1.48.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
@@ -41,7 +48,8 @@
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.1",
-    "electron": "44.4.5",
+    "electron": "44.5.0",
+    "electron-builder": "26.18.0",
     "typescript": "7.0.2",
     "vite": "8.3.1",
     "vite-plugin-electron": "1.1.2"

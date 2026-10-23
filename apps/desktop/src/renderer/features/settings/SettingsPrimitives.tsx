@@ -3,10 +3,12 @@ import { PanelGroup, PanelRow } from '@velin/ui/Panel.tsx'
 
 export function Toggle({
   checked,
+  disabled = false,
   label,
   onChange,
 }: {
   checked: boolean
+  disabled?: boolean
   label: string
   onChange: (checked: boolean) => void
 }) {
@@ -14,6 +16,7 @@ export function Toggle({
     <button
       className="settings-switch"
       type="button"
+      disabled={disabled}
       role="switch"
       aria-checked={checked}
       aria-label={label}

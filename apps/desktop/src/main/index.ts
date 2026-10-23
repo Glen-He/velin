@@ -1,7 +1,26 @@
+import { handleIpc } from './ipc-handler'
 import { createAuthStateSync } from './auth/auth-state-sync'
-import { isValidDisplayName } from '@velin/contracts/policy'
-import { errorMessage } from '@velin/contracts/error-copy'
+import { checkForUpdates } from './updates'
 import {
+  installRendererSecurity,
+  isTrustedRendererUrl,
+} from './renderer-security'
+import { release as systemRelease } from 'node:os'
+import { isValidDisplayName } from '@velin/contracts/policy'
+import { errorMessage, UserFacingError } from '@velin/contracts/error-copy'
+import {
+  chatAttachmentCancelRequestSchema,
+  chatAttachmentDeleteRequestSchema,
+  chatAttachmentPickRequestSchema,
+  chatAttachmentReprocessRequestSchema,
+  chatAttachmentStatusRequestSchema,
+  chatAttachmentUploadRequestSchema,
+  chatHistoryDeleteRequestSchema,
+  chatPendingAttachmentsRequestSchema,
+  chatHistoryLoadRequestSchema,
+  chatOrderRequestSchema,
+  chatListRequestSchema,
+  chatRenameRequestSchema,
   chatRequestSchema,
   chatStopRequestSchema,
 } from '@velin/contracts/chat-validation'
@@ -21,8 +40,17 @@ import {
 } from '@velin/contracts/app-menu-protocol'
 import { windowIpcChannels } from '@velin/contracts/window-protocol'
 import { ChatRuntime } from './chat/chat-runtime'
+import { ChatHistoryClient } from './chat/history-client'
+import { ChatAttachmentClient } from './chat/attachment-client'
+import { ChatMemoryClient } from './chat/memory-client'
+import {
+  memoryIpcChannels,
+  memoryActionSchema,
+  conversationVersionRequestSchema,
+} from '@velin/contracts/memory'
 import {
   authClient,
+  credentialScope,
   serviceUrl,
   getAuthenticatedUser,
   getInitialAuthenticatedUser,
@@ -42,15 +70,23 @@ import {
 } from '@velin/contracts/auth-protocol'
 
 const currentDirectory = dirname(fileURLToPath(import.meta.url))
-const developmentUrl = process.env.VITE_DEV_SERVER_URL
+const developmentUrl = app.isPackaged
+  ? undefined
+  : process.env.VITE_DEV_SERVER_URL
 const developmentOrigin = developmentUrl
   ? new URL(developmentUrl).origin
   : undefined
 const productionEntryPath = join(currentDirectory, '../dist/index.html')
 const productionEntryUrl = pathToFileURL(productionEntryPath).href
-const chatRuntime = new ChatRuntime(() =>
-  emitAuthState({ user: null, reason: 'session-expired' }),
-)
+const onChatUnauthorized = () => {
+  credentialScope.invalidate()
+  chatRuntime.stopAll()
+  emitAuthState({ user: null, reason: 'session-expired' })
+}
+const chatRuntime = new ChatRuntime(onChatUnauthorized)
+const chatHistory = new ChatHistoryClient(onChatUnauthorized)
+const chatMemory = new ChatMemoryClient(onChatUnauthorized)
+const chatAttachments = new ChatAttachmentClient(onChatUnauthorized)
 
 let mainWindow: BrowserWindow | null = null
 let pendingAppMenuAction: AppMenuAction | null = null
@@ -86,11 +122,11 @@ const refreshAuthState = authStateSync.refresh
 subscribeAuthenticatedUser((user) => emitAuthState({ user }))
 
 function registerAuthIpcHandlers() {
-  ipcMain.handle(authIpcChannels.getState, async (event) => ({
+  handleIpc(authIpcChannels.getState, async (event) => ({
     user: isTrustedRenderer(event) ? await getInitialAuthenticatedUser() : null,
   }))
 
-  ipcMain.handle(authIpcChannels.requestSignIn, async (event, intent, flow) => {
+  handleIpc(authIpcChannels.requestSignIn, async (event, intent, flow) => {
     if (
       !isTrustedRenderer(event) ||
       (intent !== 'sign-in' && intent !== 'sign-up') ||
@@ -110,7 +146,7 @@ function registerAuthIpcHandlers() {
     return effectiveFlow
   })
 
-  ipcMain.handle(authIpcChannels.authenticateCode, async (event, payload) => {
+  handleIpc(authIpcChannels.authenticateCode, async (event, payload) => {
     if (!isTrustedRenderer(event) || typeof payload !== 'string') {
       return
     }
@@ -118,17 +154,17 @@ function registerAuthIpcHandlers() {
     const code = payload.trim()
 
     if (code.length === 0 || code.length > 4096) {
-      throw new Error('授权码格式无效。')
+      throw new UserFacingError('授权码格式无效。')
     }
 
     const result = await authClient.authenticate({ token: code })
 
     if (result.error) {
-      throw new Error(errorMessage(result.error, '授权码验证失败。'))
+      throw new UserFacingError(errorMessage(result.error, '授权码验证失败。'))
     }
   })
 
-  ipcMain.handle(authIpcChannels.signOut, async (event) => {
+  handleIpc(authIpcChannels.signOut, async (event) => {
     if (!isTrustedRenderer(event)) {
       return
     }
@@ -138,7 +174,7 @@ function registerAuthIpcHandlers() {
     emitAuthState({ user: null })
   })
 
-  ipcMain.handle(authIpcChannels.openSecuritySettings, async (event) => {
+  handleIpc(authIpcChannels.openSecuritySettings, async (event) => {
     if (!isTrustedRenderer(event)) {
       return
     }
@@ -146,7 +182,7 @@ function registerAuthIpcHandlers() {
     await shell.openExternal(`${serviceUrl}/security`, { activate: true })
   })
 
-  ipcMain.handle(authIpcChannels.updateDisplayName, async (event, payload) => {
+  handleIpc(authIpcChannels.updateDisplayName, async (event, payload) => {
     if (!isTrustedRenderer(event) || typeof payload !== 'string') {
       return
     }
@@ -154,39 +190,39 @@ function registerAuthIpcHandlers() {
     const name = payload.trim()
 
     if (!isValidDisplayName(name)) {
-      throw new Error('用户名需为 1–32 个可见字符。')
+      throw new UserFacingError('用户名需为 1–32 个可见字符。')
     }
 
     await updateDisplayName(name)
     await refreshAuthState()
   })
 
-  ipcMain.handle(authIpcChannels.uploadAvatar, async (event, payload) => {
+  handleIpc(authIpcChannels.uploadAvatar, async (event, payload) => {
     if (!isTrustedRenderer(event)) {
       return
     }
 
     if (!(payload instanceof Uint8Array)) {
-      throw new Error('头像数据无效，请重新裁剪。')
+      throw new UserFacingError('头像数据无效，请重新裁剪。')
     }
 
     await uploadAvatar(payload)
     await refreshAuthState()
   })
 
-  ipcMain.handle(authIpcChannels.fetchAvatarImage, async (event, payload) => {
+  handleIpc(authIpcChannels.fetchAvatarImage, async (event, payload) => {
     if (!isTrustedRenderer(event)) {
       return
     }
 
     if (typeof payload !== 'string') {
-      throw new Error('头像地址无效。')
+      throw new UserFacingError('头像地址无效。')
     }
 
     return fetchAvatarImage(payload)
   })
 
-  ipcMain.handle(authIpcChannels.listSessions, async (event) => {
+  handleIpc(authIpcChannels.listSessions, async (event) => {
     if (!isTrustedRenderer(event)) {
       return []
     }
@@ -194,7 +230,7 @@ function registerAuthIpcHandlers() {
     return listAuthenticatedSessions()
   })
 
-  ipcMain.handle(authIpcChannels.revokeSession, async (event, payload) => {
+  handleIpc(authIpcChannels.revokeSession, async (event, payload) => {
     if (!isTrustedRenderer(event) || typeof payload !== 'string') {
       return
     }
@@ -202,7 +238,7 @@ function registerAuthIpcHandlers() {
     await revokeSessionById(payload)
   })
 
-  ipcMain.handle(authIpcChannels.revokeOtherSessions, async (event) => {
+  handleIpc(authIpcChannels.revokeOtherSessions, async (event) => {
     if (!isTrustedRenderer(event)) {
       return
     }
@@ -210,21 +246,6 @@ function registerAuthIpcHandlers() {
     await revokeOtherSessions()
     await refreshAuthState()
   })
-}
-
-function showUnavailableFeature(message: string, detail: string) {
-  const targetWindow = BrowserWindow.getFocusedWindow() ?? mainWindow
-  const options = {
-    type: 'info' as const,
-    buttons: ['好'],
-    defaultId: 0,
-    message,
-    detail,
-  }
-
-  void (targetWindow
-    ? dialog.showMessageBox(targetWindow, options)
-    : dialog.showMessageBox(options))
 }
 
 function installApplicationMenu() {
@@ -239,11 +260,7 @@ function installApplicationMenu() {
         },
         {
           label: '检查更新',
-          click: () =>
-            showUnavailableFeature(
-              '暂时无法检查更新',
-              '当前开发版本尚未配置更新源。',
-            ),
+          click: () => void checkForUpdates(),
         },
         {
           label: '退出登录',
@@ -315,16 +332,14 @@ function isTrustedRenderer(event: IpcMainEvent | IpcMainInvokeEvent) {
   try {
     const senderFrame = event.senderFrame
 
-    if (!senderFrame) {
+    if (!senderFrame || senderFrame !== mainWindow.webContents.mainFrame) {
       return false
     }
 
-    const senderUrl = new URL(senderFrame.url)
-
-    return (
-      (developmentOrigin !== undefined &&
-        senderUrl.origin === developmentOrigin) ||
-      senderUrl.href === productionEntryUrl
+    return isTrustedRendererUrl(
+      senderFrame.url,
+      productionEntryUrl,
+      developmentOrigin,
     )
   } catch {
     return false
@@ -352,34 +367,257 @@ function emitError(
 }
 
 function registerChatIpcHandlers() {
-  ipcMain.handle(
-    chatIpcChannels.openExternalLink,
-    async (event, value: unknown) => {
-      if (
-        !isTrustedRenderer(event) ||
-        typeof value !== 'string' ||
-        value.length > 2048
-      ) {
-        return
+  handleIpc(memoryIpcChannels.read, async (event) => {
+    if (!isTrustedRenderer(event)) throw new UserFacingError('请求来源无效。')
+    return chatMemory.read()
+  })
+  handleIpc(memoryIpcChannels.update, async (event, payload) => {
+    if (!isTrustedRenderer(event)) throw new UserFacingError('请求来源无效。')
+    const parsed = memoryActionSchema.safeParse(payload)
+    if (!parsed.success) throw new UserFacingError('记忆内容无效。')
+    return chatMemory.update(parsed.data)
+  })
+  handleIpc(memoryIpcChannels.versions, async (event, payload) => {
+    if (!isTrustedRenderer(event)) throw new UserFacingError('请求来源无效。')
+    const parsed = conversationVersionRequestSchema.safeParse(payload)
+    if (!parsed.success) throw new UserFacingError('版本请求无效。')
+    return chatMemory.versions(parsed.data)
+  })
+  handleIpc(memoryIpcChannels.restoreVersion, async (event, payload) => {
+    if (!isTrustedRenderer(event)) throw new UserFacingError('请求来源无效。')
+    const parsed = conversationVersionRequestSchema.safeParse(payload)
+    if (!parsed.success || !parsed.data.versionId)
+      throw new UserFacingError('版本请求无效。')
+    await chatMemory.restore(parsed.data)
+  })
+  handleIpc(chatIpcChannels.listConversations, async (event, payload) => {
+    if (!isTrustedRenderer(event)) throw new UserFacingError('请求来源无效。')
+    const parsed = chatListRequestSchema.safeParse(payload ?? {})
+    if (!parsed.success) throw new UserFacingError('对话列表参数无效。')
+    return chatHistory.listConversations(parsed.data)
+  })
+
+  handleIpc(chatIpcChannels.loadConversation, async (event, payload) => {
+    if (!isTrustedRenderer(event)) {
+      throw new UserFacingError('请求来源无效。')
+    }
+
+    const parsed = chatHistoryLoadRequestSchema.safeParse(payload)
+
+    if (!parsed.success) {
+      throw new UserFacingError('对话请求格式无效。')
+    }
+
+    return chatHistory.loadConversation(parsed.data)
+  })
+
+  handleIpc(chatIpcChannels.deleteConversation, async (event, payload) => {
+    if (!isTrustedRenderer(event)) {
+      throw new UserFacingError('请求来源无效。')
+    }
+
+    const parsed = chatHistoryDeleteRequestSchema.safeParse(payload)
+
+    if (!parsed.success) {
+      throw new UserFacingError('对话请求格式无效。')
+    }
+
+    await chatHistory.deleteConversation(parsed.data)
+  })
+
+  handleIpc(chatIpcChannels.renameConversation, async (event, payload) => {
+    if (!isTrustedRenderer(event)) {
+      throw new UserFacingError('请求来源无效。')
+    }
+
+    const parsed = chatRenameRequestSchema.safeParse(payload)
+
+    if (!parsed.success) {
+      throw new UserFacingError('对话请求格式无效。')
+    }
+
+    return chatHistory.renameConversation(parsed.data)
+  })
+
+  handleIpc(chatIpcChannels.reorderConversations, async (event, payload) => {
+    if (!isTrustedRenderer(event)) {
+      throw new UserFacingError('请求来源无效。')
+    }
+
+    const parsed = chatOrderRequestSchema.safeParse(payload)
+
+    if (!parsed.success) {
+      throw new UserFacingError('对话请求格式无效。')
+    }
+
+    await chatHistory.reorderConversations(parsed.data)
+  })
+
+  handleIpc(
+    chatIpcChannels.pickAttachments,
+    async (event, payload: unknown) => {
+      if (!isTrustedRenderer(event)) {
+        throw new UserFacingError('请求来源无效。')
       }
 
-      let externalUrl: URL
-      try {
-        externalUrl = new URL(value)
-      } catch {
-        return
+      const parsed = chatAttachmentPickRequestSchema.safeParse(payload)
+      if (!parsed.success) {
+        throw new UserFacingError('附件请求格式无效。')
       }
 
-      if (
-        (externalUrl.protocol === 'https:' ||
-          externalUrl.protocol === 'http:') &&
-        !externalUrl.username &&
-        !externalUrl.password
-      ) {
-        await shell.openExternal(externalUrl.href, { activate: true })
-      }
+      return chatAttachments.pick(
+        parsed.data.kind,
+        parsed.data.remaining,
+        BrowserWindow.getFocusedWindow() ?? mainWindow,
+        parsed.data.accountId,
+        parsed.data.conversationId,
+      )
     },
   )
+
+  handleIpc(
+    chatIpcChannels.listPendingAttachments,
+    async (event, payload: unknown) => {
+      if (!isTrustedRenderer(event)) {
+        throw new UserFacingError('请求来源无效。')
+      }
+
+      const parsed = chatPendingAttachmentsRequestSchema.safeParse(payload)
+      if (!parsed.success) {
+        throw new UserFacingError('附件请求格式无效。')
+      }
+      return chatAttachments.listPending(parsed.data.conversationId)
+    },
+  )
+
+  handleIpc(
+    chatIpcChannels.uploadAttachment,
+    async (event, payload: unknown) => {
+      if (!isTrustedRenderer(event) || !isRecord(payload)) {
+        throw new UserFacingError('附件请求格式无效。')
+      }
+
+      if (!(payload.bytes instanceof Uint8Array)) {
+        throw new UserFacingError('附件数据无效。')
+      }
+
+      const parsed = chatAttachmentUploadRequestSchema.safeParse({
+        accountId: payload.accountId,
+        name: payload.name,
+        mimeType: payload.mimeType,
+        ...(payload.pageRange !== undefined
+          ? { pageRange: payload.pageRange }
+          : {}),
+        ...(payload.conversationId !== undefined
+          ? { conversationId: payload.conversationId }
+          : {}),
+      })
+      if (!parsed.success) {
+        throw new UserFacingError('附件请求格式无效。')
+      }
+
+      return chatAttachments.upload(
+        parsed.data.name,
+        parsed.data.mimeType,
+        payload.bytes,
+        {
+          accountId: parsed.data.accountId,
+          pageRange: parsed.data.pageRange,
+          conversationId: parsed.data.conversationId,
+        },
+      )
+    },
+  )
+
+  handleIpc(
+    chatIpcChannels.reprocessAttachment,
+    async (event, payload: unknown) => {
+      if (!isTrustedRenderer(event)) {
+        throw new UserFacingError('请求来源无效。')
+      }
+
+      const parsed = chatAttachmentReprocessRequestSchema.safeParse(payload)
+      if (!parsed.success) {
+        throw new UserFacingError('附件请求格式无效。')
+      }
+
+      return chatAttachments.reprocess(
+        parsed.data.attachmentId,
+        parsed.data.pageRange,
+      )
+    },
+  )
+
+  handleIpc(
+    chatIpcChannels.attachmentStatus,
+    async (event, payload: unknown) => {
+      if (!isTrustedRenderer(event)) {
+        throw new UserFacingError('请求来源无效。')
+      }
+
+      const parsed = chatAttachmentStatusRequestSchema.safeParse(payload)
+      if (!parsed.success) {
+        throw new UserFacingError('附件请求格式无效。')
+      }
+      return chatAttachments.getStatus(parsed.data.attachmentId)
+    },
+  )
+
+  handleIpc(
+    chatIpcChannels.cancelAttachmentProcessing,
+    async (event, payload: unknown) => {
+      if (!isTrustedRenderer(event)) {
+        throw new UserFacingError('请求来源无效。')
+      }
+
+      const parsed = chatAttachmentCancelRequestSchema.safeParse(payload)
+      if (!parsed.success) {
+        throw new UserFacingError('附件请求格式无效。')
+      }
+      await chatAttachments.cancel(parsed.data.attachmentId)
+    },
+  )
+
+  handleIpc(
+    chatIpcChannels.deleteAttachment,
+    async (event, payload: unknown) => {
+      if (!isTrustedRenderer(event)) {
+        throw new UserFacingError('请求来源无效。')
+      }
+
+      const parsed = chatAttachmentDeleteRequestSchema.safeParse(payload)
+      if (!parsed.success) {
+        throw new UserFacingError('附件请求格式无效。')
+      }
+
+      await chatAttachments.delete(parsed.data.attachmentId)
+    },
+  )
+
+  handleIpc(chatIpcChannels.openExternalLink, async (event, value: unknown) => {
+    if (
+      !isTrustedRenderer(event) ||
+      typeof value !== 'string' ||
+      value.length > 2048
+    ) {
+      return
+    }
+
+    let externalUrl: URL
+    try {
+      externalUrl = new URL(value)
+    } catch {
+      return
+    }
+
+    if (
+      (externalUrl.protocol === 'https:' || externalUrl.protocol === 'http:') &&
+      !externalUrl.username &&
+      !externalUrl.password
+    ) {
+      await shell.openExternal(externalUrl.href, { activate: true })
+    }
+  })
 
   ipcMain.on(chatIpcChannels.send, (event, payload: unknown) => {
     if (!isTrustedRenderer(event)) {
@@ -439,7 +677,7 @@ function emitFullScreenState() {
 }
 
 function registerWindowIpcHandlers() {
-  ipcMain.handle(windowIpcChannels.getFullScreenState, (event) => {
+  handleIpc(windowIpcChannels.getFullScreenState, (event) => {
     return isTrustedRenderer(event)
       ? (mainWindow?.isFullScreen() ?? false)
       : false
@@ -486,18 +724,11 @@ function createWindow() {
   })
   mainWindow.on('page-title-updated', (event) => event.preventDefault())
 
-  mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
-  mainWindow.webContents.on('will-navigate', (event, navigationUrl) => {
-    const navigation = new URL(navigationUrl)
-    const isAllowed =
-      (developmentOrigin !== undefined &&
-        navigation.origin === developmentOrigin) ||
-      navigation.href === productionEntryUrl
-
-    if (!isAllowed) {
-      event.preventDefault()
-    }
-  })
+  installRendererSecurity(
+    mainWindow,
+    (url) => isTrustedRendererUrl(url, productionEntryUrl, developmentOrigin),
+    () => chatRuntime.stopAll(),
+  )
 
   if (developmentUrl) {
     void mainWindow.loadURL(developmentUrl)
@@ -519,6 +750,18 @@ authClient.setupMain({
 })
 
 void app.whenReady().then(() => {
+  if (
+    app.isPackaged &&
+    process.platform === 'win32' &&
+    Number(systemRelease().split('.')[2] ?? 0) < 22000
+  ) {
+    dialog.showErrorBox(
+      '系统版本不受支持',
+      'Velin 需要 Windows 11 或更新版本。',
+    )
+    app.quit()
+    return
+  }
   installApplicationMenu()
   createWindow()
 

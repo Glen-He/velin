@@ -6,6 +6,7 @@ export type SettingsSection =
   | 'general'
   | 'appearance'
   | 'chat'
+  | 'memory'
   | 'about'
 
 export type SettingsViewProps = {

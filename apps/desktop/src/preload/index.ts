@@ -1,3 +1,9 @@
+import { invoke } from './invoke'
+import {
+  memoryIpcChannels,
+  type MemoryAction,
+  type ConversationVersionRequest,
+} from '@velin/contracts/memory'
 import { contextBridge, ipcRenderer } from 'electron'
 import {
   appMenuIpcChannels,
@@ -5,7 +11,19 @@ import {
 } from '@velin/contracts/app-menu-protocol'
 import {
   chatIpcChannels,
+  type ChatAttachmentCancelRequest,
+  type ChatAttachmentDeleteRequest,
+  type ChatAttachmentPickRequest,
+  type ChatAttachmentReprocessRequest,
+  type ChatAttachmentStatusRequest,
+  type ChatAttachmentUploadRequest,
   type ChatEvent,
+  type ChatHistoryDeleteRequest,
+  type ChatHistoryLoadRequest,
+  type ChatOrderRequest,
+  type ChatListRequest,
+  type ChatPendingAttachmentsRequest,
+  type ChatRenameRequest,
   type SendMessageRequest,
   type StopMessageRequest,
 } from '@velin/contracts/chat-protocol'
@@ -29,39 +47,47 @@ import type {
 } from '@velin/contracts/velin-api'
 
 const velinApi: VelinApi = {
+  memory: {
+    read: () => invoke(memoryIpcChannels.read),
+    update: (action: MemoryAction) => invoke(memoryIpcChannels.update, action),
+    versions: (input: ConversationVersionRequest) =>
+      invoke(memoryIpcChannels.versions, input),
+    restoreVersion: (input: ConversationVersionRequest) =>
+      invoke(memoryIpcChannels.restoreVersion, input),
+  },
   auth: {
     getState() {
-      return ipcRenderer.invoke(authIpcChannels.getState)
+      return invoke(authIpcChannels.getState)
     },
     requestSignIn(intent: AuthIntent = 'sign-in', flow: AuthFlow = 'browser') {
-      return ipcRenderer.invoke(authIpcChannels.requestSignIn, intent, flow)
+      return invoke(authIpcChannels.requestSignIn, intent, flow)
     },
     authenticateCode(code: string) {
-      return ipcRenderer.invoke(authIpcChannels.authenticateCode, code)
+      return invoke(authIpcChannels.authenticateCode, code)
     },
     signOut() {
-      return ipcRenderer.invoke(authIpcChannels.signOut)
+      return invoke(authIpcChannels.signOut)
     },
     openSecuritySettings() {
-      return ipcRenderer.invoke(authIpcChannels.openSecuritySettings)
+      return invoke(authIpcChannels.openSecuritySettings)
     },
     updateDisplayName(name: string) {
-      return ipcRenderer.invoke(authIpcChannels.updateDisplayName, name)
+      return invoke(authIpcChannels.updateDisplayName, name)
     },
     uploadAvatar(image: Uint8Array) {
-      return ipcRenderer.invoke(authIpcChannels.uploadAvatar, image)
+      return invoke(authIpcChannels.uploadAvatar, image)
     },
     fetchAvatarImage(imageUrl: string) {
-      return ipcRenderer.invoke(authIpcChannels.fetchAvatarImage, imageUrl)
+      return invoke(authIpcChannels.fetchAvatarImage, imageUrl)
     },
     listSessions() {
-      return ipcRenderer.invoke(authIpcChannels.listSessions)
+      return invoke(authIpcChannels.listSessions)
     },
     revokeSession(sessionId: string) {
-      return ipcRenderer.invoke(authIpcChannels.revokeSession, sessionId)
+      return invoke(authIpcChannels.revokeSession, sessionId)
     },
     revokeOtherSessions() {
-      return ipcRenderer.invoke(authIpcChannels.revokeOtherSessions)
+      return invoke(authIpcChannels.revokeOtherSessions)
     },
     subscribe(listener: AuthStateListener) {
       const handleState = (
@@ -95,7 +121,43 @@ const velinApi: VelinApi = {
       ipcRenderer.send(chatIpcChannels.stop, request)
     },
     openExternalLink(url: string) {
-      return ipcRenderer.invoke(chatIpcChannels.openExternalLink, url)
+      return invoke(chatIpcChannels.openExternalLink, url)
+    },
+    listConversations(request: ChatListRequest = {}) {
+      return invoke(chatIpcChannels.listConversations, request)
+    },
+    loadConversation(request: ChatHistoryLoadRequest) {
+      return invoke(chatIpcChannels.loadConversation, request)
+    },
+    deleteConversation(request: ChatHistoryDeleteRequest) {
+      return invoke(chatIpcChannels.deleteConversation, request)
+    },
+    renameConversation(request: ChatRenameRequest) {
+      return invoke(chatIpcChannels.renameConversation, request)
+    },
+    reorderConversations(request: ChatOrderRequest) {
+      return invoke(chatIpcChannels.reorderConversations, request)
+    },
+    pickAttachments(request: ChatAttachmentPickRequest) {
+      return invoke(chatIpcChannels.pickAttachments, request)
+    },
+    listPendingAttachments(request: ChatPendingAttachmentsRequest) {
+      return invoke(chatIpcChannels.listPendingAttachments, request)
+    },
+    uploadAttachment(request: ChatAttachmentUploadRequest) {
+      return invoke(chatIpcChannels.uploadAttachment, request)
+    },
+    reprocessAttachment(request: ChatAttachmentReprocessRequest) {
+      return invoke(chatIpcChannels.reprocessAttachment, request)
+    },
+    getAttachmentStatus(request: ChatAttachmentStatusRequest) {
+      return invoke(chatIpcChannels.attachmentStatus, request)
+    },
+    cancelAttachmentProcessing(request: ChatAttachmentCancelRequest) {
+      return invoke(chatIpcChannels.cancelAttachmentProcessing, request)
+    },
+    deleteAttachment(request: ChatAttachmentDeleteRequest) {
+      return invoke(chatIpcChannels.deleteAttachment, request)
     },
     subscribe(listener: ChatEventListener) {
       const handleEvent = (
@@ -130,7 +192,7 @@ const velinApi: VelinApi = {
   },
   window: {
     getFullScreenState() {
-      return ipcRenderer.invoke(windowIpcChannels.getFullScreenState)
+      return invoke(windowIpcChannels.getFullScreenState)
     },
     subscribeFullScreenState(listener: FullScreenStateListener) {
       const handleState = (

@@ -12,7 +12,7 @@
   inset: 0;
   min-width: 0;
   opacity: 1;
-  transform: translateX(0);
+  transform: none;
   transition:
     opacity var(--motion-duration-content) var(--motion-ease-standard),
     transform var(--motion-duration-content) var(--motion-ease-standard);
@@ -36,7 +36,7 @@
 .app-shell.is-settings-view .settings-content-surface {
   opacity: 1;
   pointer-events: auto;
-  transform: translateX(0);
+  transform: none;
 }
 
 .sidebar-panel {
@@ -143,7 +143,7 @@
   flex-direction: column;
   overflow: hidden;
   background: var(--sidebar-background);
-  transform: translateX(0);
+  transform: none;
   -webkit-user-select: none;
   user-select: none;
 }
@@ -207,6 +207,8 @@
 }
 
 .sidebar-header {
+  display: grid;
+  gap: var(--space-1);
   padding: var(--titlebar-height) var(--sidebar-inline-gutter) var(--space-6);
 }
 

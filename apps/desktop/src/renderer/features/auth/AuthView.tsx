@@ -188,6 +188,7 @@ function AuthView({
                     <KeyRound />
                   </span>
                   <input
+                    className="field-input"
                     id="desktop-auth-code"
                     autoCapitalize="none"
                     autoComplete="one-time-code"

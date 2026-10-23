@@ -16,7 +16,16 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { LogIn, LogOut, Plus, Settings, Trash2 } from 'lucide-react'
+import {
+  LogIn,
+  LogOut,
+  Pencil,
+  Plus,
+  Search,
+  Settings,
+  Trash2,
+  X,
+} from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -24,13 +33,25 @@ import type { CSSProperties, MouseEvent } from 'react'
 import type { Conversation } from '@velin/contracts/chat'
 import type { AuthUser } from '@velin/contracts/auth-protocol'
 import { UserAvatar } from '../account/UserAvatar'
+import { filterConversations } from './filter'
 
 type ConversationSidebarProps = {
   conversations: Conversation[]
   activeConversationId: string | null
   authUser: AuthUser | null
+  isHistoryLoading: boolean
+  hasMore: boolean
+  isLoadingMore: boolean
+  isOrderSaving: boolean
+  onLoadMore: () => void
+  onSearchQueryChange: (query: string) => void
+  historyError: string | null
+  orderError: string | null
+  onRetryHistory: () => void
+  onRetryOrder: () => void
   onNewConversation: () => void
   onDeleteConversation: (conversationId: string) => void
+  onRenameConversation: (conversationId: string) => void
   onOpenSettings: () => void
   onSignIn: () => void
   onSignOut: () => void
@@ -57,6 +78,7 @@ type AccountMenuPosition = {
 type SortableConversationItemProps = {
   conversation: Conversation
   isActive: boolean
+  isDragDisabled: boolean
   onContextMenu: (
     event: MouseEvent<HTMLButtonElement>,
     conversationId: string,
@@ -107,6 +129,7 @@ function getSectionLabel(timestamp: number) {
 function SortableConversationItem({
   conversation,
   isActive,
+  isDragDisabled,
   onContextMenu,
   onSelect,
 }: SortableConversationItemProps) {
@@ -117,7 +140,7 @@ function SortableConversationItem({
     setNodeRef,
     transform,
     transition,
-  } = useSortable({ id: conversation.id })
+  } = useSortable({ id: conversation.id, disabled: isDragDisabled })
   const style: CSSProperties = {
     transform: transform ? CSS.Transform.toString(transform) : undefined,
     transition,
@@ -127,7 +150,7 @@ function SortableConversationItem({
     <div
       className={`conversation-item-row no-drag${isActive ? ' is-active' : ''}${
         isDragging ? ' is-dragging' : ''
-      }`}
+      }${isDragDisabled ? ' is-drag-disabled' : ''}`}
       data-conversation-id={conversation.id}
       ref={setNodeRef}
       style={style}
@@ -152,8 +175,19 @@ function ConversationSidebar({
   conversations,
   activeConversationId,
   authUser,
+  isHistoryLoading,
+  hasMore,
+  isLoadingMore,
+  isOrderSaving,
+  onLoadMore,
+  onSearchQueryChange,
+  historyError,
+  orderError,
+  onRetryHistory,
+  onRetryOrder,
   onNewConversation,
   onDeleteConversation,
+  onRenameConversation,
   onOpenSettings,
   onSignIn,
   onSignOut,
@@ -167,7 +201,19 @@ function ConversationSidebar({
     null,
   )
   const [activeDragId, setActiveDragId] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const searchedQueryRef = useRef('')
+  useEffect(() => {
+    if (searchQuery === searchedQueryRef.current) return
+    const timer = window.setTimeout(() => {
+      searchedQueryRef.current = searchQuery
+      onSearchQueryChange(searchQuery)
+    }, 200)
+    return () => window.clearTimeout(timer)
+  }, [searchQuery, onSearchQueryChange])
   const accountButtonRef = useRef<HTMLButtonElement>(null)
+  const isSearching = searchQuery.trim().length > 0
+  const visibleConversations = filterConversations(conversations, searchQuery)
   const accountName = authUser ? authUser.name.trim() || authUser.email : '登录'
   const accountIdentity = authUser
     ? `${accountName}（${authUser.email}）`
@@ -224,6 +270,7 @@ function ConversationSidebar({
   }
 
   function handleDragStart(event: DragStartEvent) {
+    if (isSearching) return
     setContextMenu(null)
     setAccountMenu(null)
     setActiveDragId(String(event.active.id))
@@ -254,7 +301,7 @@ function ConversationSidebar({
   function handleDragEnd(event: DragEndEvent) {
     setActiveDragId(null)
 
-    if (!event.over || event.active.id === event.over.id) {
+    if (isSearching || !event.over || event.active.id === event.over.id) {
       return
     }
 
@@ -272,6 +319,26 @@ function ConversationSidebar({
           <Plus className="new-conversation-icon" aria-hidden="true" />
           <span>新建对话</span>
         </button>
+        <div className="conversation-search field-search">
+          <Search className="conversation-search-icon" aria-hidden="true" />
+          <input
+            type="text"
+            value={searchQuery}
+            placeholder="搜索对话"
+            aria-label="搜索对话"
+            onChange={(event) => setSearchQuery(event.currentTarget.value)}
+          />
+          {searchQuery ? (
+            <button
+              className="conversation-search-clear"
+              type="button"
+              aria-label="清除搜索"
+              onClick={() => setSearchQuery('')}
+            >
+              <X aria-hidden="true" />
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <DndContext
@@ -282,12 +349,45 @@ function ConversationSidebar({
         onDragStart={handleDragStart}
       >
         <SortableContext
-          items={conversations.map((conversation) => conversation.id)}
+          items={visibleConversations.map((conversation) => conversation.id)}
           strategy={verticalListSortingStrategy}
         >
-          <nav className="conversation-list" aria-label="对话列表">
+          <nav
+            className="conversation-list"
+            aria-label="对话列表"
+            aria-busy={isHistoryLoading}
+          >
+            {historyError ? (
+              <div className="conversation-status is-error" role="alert">
+                <span>{historyError}</span>
+                <button
+                  className="conversation-retry"
+                  type="button"
+                  onClick={onRetryHistory}
+                >
+                  重新读取
+                </button>
+              </div>
+            ) : null}
+            {orderError ? (
+              <div className="conversation-status is-error" role="alert">
+                <span>{orderError}</span>
+                <button
+                  className="conversation-retry"
+                  type="button"
+                  onClick={onRetryOrder}
+                >
+                  重试
+                </button>
+              </div>
+            ) : null}
+            {isSearching &&
+            !isHistoryLoading &&
+            visibleConversations.length === 0 ? (
+              <p className="conversation-status">没有匹配的对话</p>
+            ) : null}
             {sectionLabels.map((sectionLabel) => {
-              const sectionConversations = conversations.filter(
+              const sectionConversations = visibleConversations.filter(
                 (conversation) =>
                   getSectionLabel(conversation.updatedAt) === sectionLabel,
               )
@@ -304,6 +404,7 @@ function ConversationSidebar({
                       <SortableConversationItem
                         conversation={conversation}
                         isActive={conversation.id === activeConversationId}
+                        isDragDisabled={isSearching || isOrderSaving}
                         key={conversation.id}
                         onContextMenu={handleContextMenu}
                         onSelect={onSelectConversation}
@@ -313,6 +414,16 @@ function ConversationSidebar({
                 </section>
               )
             })}
+            {hasMore ? (
+              <button
+                type="button"
+                className="conversation-retry"
+                disabled={isLoadingMore || isHistoryLoading}
+                onClick={onLoadMore}
+              >
+                {isLoadingMore ? '正在读取…' : '加载更多对话'}
+              </button>
+            ) : null}
           </nav>
         </SortableContext>
 
@@ -359,6 +470,18 @@ function ConversationSidebar({
               style={{ left: contextMenu.left, top: contextMenu.top }}
               onPointerDown={(event) => event.stopPropagation()}
             >
+              <button
+                className="context-menu-item"
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  onRenameConversation(contextMenu.conversationId)
+                  setContextMenu(null)
+                }}
+              >
+                <MenuIcon icon={Pencil} size={14} />
+                重命名
+              </button>
               <button
                 className="context-menu-item"
                 type="button"

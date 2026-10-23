@@ -10,14 +10,16 @@ export function CardDialog({
   onClose,
   width = 'edit',
   children,
+  focusKey,
 }: {
   title: string
   onClose: () => void
   width?: CardDialogWidth
   children: ReactNode
+  focusKey?: string
 }) {
   return (
-    <Modal label={title} onClose={onClose}>
+    <Modal label={title} onClose={onClose} focusKey={focusKey}>
       <div className="card-dialog-scrim" onPointerDown={onClose}>
         <div
           className={`card-dialog is-${width}`}

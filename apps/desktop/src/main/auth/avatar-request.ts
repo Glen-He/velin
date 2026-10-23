@@ -1,3 +1,4 @@
+import { UserFacingError } from '@velin/contracts/error-copy'
 import { isAvatarJpeg, resolveOwnedAvatarUrl } from '@velin/contracts/avatar'
 import { avatarLimits } from '@velin/contracts/policy'
 
@@ -8,7 +9,7 @@ export async function fetchOwnedAvatarImage(
   request: typeof fetch = fetch,
 ): Promise<Uint8Array<ArrayBuffer>> {
   const url = resolveOwnedAvatarUrl(image, serviceUrl)
-  if (!url) throw new Error('头像地址无效。')
+  if (!url) throw new UserFacingError('头像地址无效。')
   const response = await request(url, {
     redirect: 'error',
     credentials: 'omit',
@@ -24,7 +25,7 @@ export async function fetchOwnedAvatarImage(
       .toLowerCase() !== 'image/jpeg'
   ) {
     await response.body?.cancel().catch(() => {})
-    throw new Error('加载头像失败，请稍后重试。')
+    throw new UserFacingError('加载头像失败，请稍后重试。')
   }
   const reader = response.body.getReader()
   const chunks: Uint8Array[] = []
@@ -34,7 +35,8 @@ export async function fetchOwnedAvatarImage(
       const { value, done } = await reader.read()
       if (done) break
       size += value.byteLength
-      if (size > avatarLimits.uploadBytes) throw new Error('头像图片过大。')
+      if (size > avatarLimits.uploadBytes)
+        throw new UserFacingError('头像图片过大。')
       chunks.push(value)
     }
   } catch (error) {
@@ -49,6 +51,6 @@ export async function fetchOwnedAvatarImage(
     bytes.set(chunk, offset)
     offset += chunk.byteLength
   }
-  if (!isAvatarJpeg(bytes)) throw new Error('头像图片格式无效。')
+  if (!isAvatarJpeg(bytes)) throw new UserFacingError('头像图片格式无效。')
   return bytes
 }

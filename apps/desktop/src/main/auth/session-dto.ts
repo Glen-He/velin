@@ -1,3 +1,4 @@
+import { UserFacingError } from '@velin/contracts/error-copy'
 import type { SessionClientMetadata } from '@velin/contracts/session-client'
 import type { DesktopSession } from '@velin/contracts/auth-protocol'
 import { isRecord, normalizeSessionDate } from '@velin/contracts/value'
@@ -8,9 +9,10 @@ export function toDesktopSessions(
   currentToken: string | null,
   metadata: SessionClientMetadata,
 ): DesktopSession[] {
-  if (!Array.isArray(value)) throw new Error('登录设备列表返回的数据不完整。')
+  if (!Array.isArray(value))
+    throw new UserFacingError('登录设备列表返回的数据不完整。')
   if (value.length > 0 && !currentToken)
-    throw new Error('无法确定当前登录设备，请重新读取。')
+    throw new UserFacingError('无法确定当前登录设备，请重新读取。')
   const ids = new Set<string>()
   const tokens = new Set<string>()
   const sessions = value.map((item): DesktopSession => {
@@ -23,7 +25,7 @@ export function toDesktopSessions(
       !item.token ||
       tokens.has(item.token)
     )
-      throw new Error('登录设备列表返回的数据不完整。')
+      throw new UserFacingError('登录设备列表返回的数据不完整。')
     ids.add(item.id)
     tokens.add(item.token)
     const isCurrent = item.token === currentToken
@@ -39,6 +41,6 @@ export function toDesktopSessions(
     }
   })
   if (sessions.length > 0 && !sessions.some((session) => session.isCurrent))
-    throw new Error('无法确定当前登录设备，请重新读取。')
+    throw new UserFacingError('无法确定当前登录设备，请重新读取。')
   return sessions
 }

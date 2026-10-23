@@ -1,16 +1,24 @@
 import { usePreferences } from './features/preferences/usePreferences'
 import { useSidebar } from './features/shell/useSidebar'
 import { useChat } from './features/chat/useChat'
+import { useChatHistory } from './features/chat/useChatHistory'
+import {
+  chatDraftStorageKey,
+  storeChatDraft,
+  pruneChatDrafts,
+} from './features/chat/draft-storage'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import ChatView from './features/chat/ChatView'
 import ConversationSidebar from './features/conversations/ConversationSidebar'
+import { RenameConversationDialog } from './features/conversations/RenameConversationDialog'
 import SettingsView from './features/settings/SettingsView'
 import { SettingsNavigation } from './features/settings/SettingsNavigation'
 import AuthView from './features/auth/AuthView'
 import { ConfirmationDialog } from '@velin/ui/ConfirmationDialog.tsx'
 import type { AuthUser } from '@velin/contracts/auth-protocol'
+import type { MessageAttachment } from '@velin/contracts/chat'
 import type { AuthFlow, AuthIntent } from '@velin/contracts/auth-protocol'
 import type { SettingsSection } from './features/settings/types'
 
@@ -37,6 +45,10 @@ function App() {
     maximumSidebarWidth,
   } = useSidebar()
   const [signOutDialogOpen, setSignOutDialogOpen] = useState(false)
+  const [pendingDeleteConversationId, setPendingDeleteConversationId] =
+    useState<string | null>(null)
+  const [pendingRenameConversationId, setPendingRenameConversationId] =
+    useState<string | null>(null)
   const [appView, setAppView] = useState<AppView>('chat')
   const [chatScope, setChatScope] = useState(0)
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
@@ -55,6 +67,10 @@ function App() {
     setSendOnEnter,
     edgeRevealEnabled,
     setEdgeRevealEnabled,
+    chatModel,
+    setChatModel,
+    reasoningEffort,
+    setReasoningEffort,
   } = usePreferences()
   const {
     conversations,
@@ -62,10 +78,23 @@ function App() {
     conversation: activeConversation,
     request: currentRequest,
     error: currentError,
+    history: activeHistory,
     store: chat,
   } = useChat()
+  const chatHistory = useChatHistory(authUser, chat, activeConversationId)
+  const pendingDeleteConversation = conversations.find(
+    (conversation) => conversation.id === pendingDeleteConversationId,
+  )
+  const pendingRenameConversation = conversations.find(
+    (conversation) => conversation.id === pendingRenameConversationId,
+  )
   const setActiveConversationId = chat.select
   const authenticatedUserIdRef = useRef<string | null>(null)
+  useEffect(() => {
+    pruneChatDrafts()
+    const timer = window.setInterval(pruneChatDrafts, 60_000)
+    return () => window.clearInterval(timer)
+  }, [])
   useEffect(() => {
     let isDisposed = false
     let receivedStateEvent = false
@@ -202,17 +231,45 @@ function App() {
     chat.select(null)
     setAppView('chat')
   }
-  const handleDeleteConversation = chat.remove
-  const handleReorderConversation = chat.reorder
-  function handleSendMessage(content: string) {
-    return ensureSignedIn() && chat.send(content)
+  const handleDeleteConversation = (conversationId: string) =>
+    setPendingDeleteConversationId(conversationId)
+  async function handleConfirmDeleteConversation() {
+    const conversationId = pendingDeleteConversationId
+    if (!conversationId) return
+    await chatHistory.deleteConversation(conversationId)
+    // 会话删除后服务端待发送附件会级联清理，本地文字草稿也不应继续滞留。
+    storeChatDraft(
+      chatDraftStorageKey(authUser?.id ?? null, conversationId),
+      '',
+    )
+  }
+  const handleRenameConversation = (conversationId: string) =>
+    setPendingRenameConversationId(conversationId)
+  const handleReorderConversation = chatHistory.reorderConversations
+  const sendOptions = { model: chatModel, reasoningEffort }
+  function handleSendMessage(
+    content: string,
+    attachments: MessageAttachment[],
+  ) {
+    return (
+      ensureSignedIn() && chat.send(content, { ...sendOptions, attachments })
+    )
   }
   function handleEditMessage(
     conversationId: string,
     messageId: string,
     content: string,
   ) {
-    return ensureSignedIn() && chat.edit(conversationId, messageId, content)
+    return (
+      ensureSignedIn() &&
+      chat.edit(conversationId, messageId, content, sendOptions)
+    )
+  }
+  function handleRegenerateMessage(conversationId: string, messageId: string) {
+    return (
+      ensureSignedIn() &&
+      chat.regenerate(conversationId, messageId, sendOptions)
+    )
   }
   const handleStopMessage = chat.stop
 
@@ -262,6 +319,29 @@ function App() {
           确认要退出当前账号吗？当前登录会话将被移除。
         </ConfirmationDialog>
       ) : null}
+      {pendingRenameConversation && pendingRenameConversationId ? (
+        <RenameConversationDialog
+          key={pendingRenameConversationId}
+          initialTitle={pendingRenameConversation.title}
+          onClose={() => setPendingRenameConversationId(null)}
+          onSave={(title) =>
+            chatHistory.renameConversation(pendingRenameConversation.id, title)
+          }
+        />
+      ) : null}
+      {pendingDeleteConversation && pendingDeleteConversationId ? (
+        <ConfirmationDialog
+          key={pendingDeleteConversationId}
+          title="删除对话"
+          confirmLabel="删除"
+          pendingLabel="删除中…"
+          failureMessage="删除对话失败，请稍后重试。"
+          onClose={() => setPendingDeleteConversationId(null)}
+          onConfirm={handleConfirmDeleteConversation}
+        >
+          确认要删除“{pendingDeleteConversation.title}”吗？删除后无法恢复。
+        </ConfirmationDialog>
+      ) : null}
       <div
         hidden={isAuthViewOpen}
         inert={isAuthViewOpen}
@@ -304,12 +384,31 @@ function App() {
               inert={appView !== 'chat'}
             >
               <ConversationSidebar
+                key={authUser?.id ?? 'guest'}
                 isActive={appView === 'chat'}
-                conversations={conversations}
+                conversations={
+                  chatHistory.searchConversations ??
+                  chatHistory.listConversations
+                }
+                hasMore={chatHistory.hasMoreConversations}
+                isLoadingMore={chatHistory.isLoadingMoreConversations}
+                isOrderSaving={chatHistory.isOrderSaving}
+                onLoadMore={chatHistory.loadMoreConversations}
+                onSearchQueryChange={chatHistory.searchList}
                 activeConversationId={activeConversationId}
                 authUser={authUser}
+                isHistoryLoading={chatHistory.listStatus === 'loading'}
+                historyError={
+                  chatHistory.listStatus === 'error'
+                    ? chatHistory.listError
+                    : null
+                }
+                orderError={chatHistory.orderError}
+                onRetryHistory={chatHistory.retryList}
+                onRetryOrder={chatHistory.retryOrder}
                 onNewConversation={handleNewConversation}
                 onDeleteConversation={handleDeleteConversation}
+                onRenameConversation={handleRenameConversation}
                 onOpenSettings={() => setAppView('settings')}
                 onSignIn={() => openAuthView()}
                 onSignOut={() => setSignOutDialogOpen(true)}
@@ -359,11 +458,25 @@ function App() {
             >
               <ChatView
                 key={chatScope}
+                accountId={authUser?.id ?? null}
                 conversation={activeConversation}
                 errorMessage={currentError}
                 isStreaming={currentRequest !== undefined}
                 sendOnEnter={sendOnEnter}
+                chatModel={chatModel}
+                reasoningEffort={reasoningEffort}
+                onChatModelChange={setChatModel}
+                onReasoningEffortChange={setReasoningEffort}
+                historyStatus={activeHistory?.status}
+                historyError={activeHistory?.error}
+                hasEarlierMessages={activeHistory?.hasMore ?? false}
+                isLoadingEarlier={chatHistory.isLoadingEarlier}
+                earlierError={chatHistory.earlierError}
+                onLoadEarlier={chatHistory.loadEarlier}
+                onRetryHistory={chatHistory.retryActiveHistory}
+                onRestoreVersion={chatHistory.restoreVersion}
                 onEditMessage={handleEditMessage}
+                onRegenerateMessage={handleRegenerateMessage}
                 onSendMessage={handleSendMessage}
                 onStopMessage={handleStopMessage}
               />

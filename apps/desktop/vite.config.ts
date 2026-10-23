@@ -2,6 +2,7 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import electron from 'vite-plugin-electron/simple'
 import { randomBytes } from 'node:crypto'
+import { serviceOrigin } from '@velin/contracts/service-url'
 
 const electronOutput = '**/dist-electron/**'
 
@@ -9,6 +10,9 @@ const electronOutput = '**/dist-electron/**'
 delete process.env.ELECTRON_RUN_AS_NODE
 
 export default defineConfig(({ command }) => {
+  const bundledServiceUrl = process.env.VELIN_API_SERVER_URL
+    ? serviceOrigin(process.env.VELIN_API_SERVER_URL, command === 'serve')
+    : null
   const developmentNonce =
     command === 'serve' ? randomBytes(16).toString('base64') : undefined
 
@@ -19,7 +23,14 @@ export default defineConfig(({ command }) => {
       strictPort: true,
       headers: { 'Content-Security-Policy': "frame-ancestors 'none'" },
       watch: {
-        ignored: [electronOutput, '**/apps/*/dist/**', '**/.review.local/**'],
+        ignored: [
+          electronOutput,
+          '**/apps/*/dist/**',
+          '**/apps/*/release/**',
+          '**/apps/*/.next/**',
+          '**/apps/*/.next-dev/**',
+          '**/.review.local/**',
+        ],
       },
     },
     plugins: [
@@ -54,6 +65,21 @@ export default defineConfig(({ command }) => {
         main: {
           entry: 'src/main/index.ts',
           vite: {
+            define: {
+              __VELIN_SERVICE_URL__: JSON.stringify(bundledServiceUrl),
+            },
+            plugins: [
+              {
+                name: 'velin:main-build-config',
+                generateBundle() {
+                  this.emitFile({
+                    type: 'asset',
+                    fileName: 'build-config.json',
+                    source: JSON.stringify({ serviceUrl: bundledServiceUrl }),
+                  })
+                },
+              },
+            ],
             build: {
               rolldownOptions: { output: { entryFileNames: 'main.js' } },
               watch: command === 'serve' ? { exclude: electronOutput } : null,

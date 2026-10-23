@@ -1,15 +1,19 @@
 export const preferenceStorageKeys = {
   appearanceMode: 'velin:preference:appearance-mode',
+  chatModel: 'velin:preference:chat-model',
   edgeRevealEnabled: 'velin:preference:edge-reveal-enabled',
   fontScale: 'velin:preference:font-scale',
   sendOnEnter: 'velin:preference:send-on-enter',
   sidebarWidth: 'velin:preference:sidebar-width',
 } as const
 
-export function readStoredChoice<T extends string>(
+export function reasoningEffortStorageKey(modelId: string) {
+  return `velin:preference:reasoning-effort:${modelId}`
+}
+
+export function readStoredChoiceValue<T extends string>(
   key: string,
   allowedValues: readonly T[],
-  fallback: T,
 ) {
   try {
     const storedValue = window.localStorage.getItem(key)
@@ -21,7 +25,15 @@ export function readStoredChoice<T extends string>(
     // 存储不可用时，当前会话仍可使用偏好设置。
   }
 
-  return fallback
+  return null
+}
+
+export function readStoredChoice<T extends string>(
+  key: string,
+  allowedValues: readonly T[],
+  fallback: T,
+) {
+  return readStoredChoiceValue(key, allowedValues) ?? fallback
 }
 
 export function readStoredBoolean(key: string, fallback: boolean) {

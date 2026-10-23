@@ -1,9 +1,19 @@
-import { useEffect, useLayoutEffect, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
+import {
+  chatModelIds,
+  defaultChatModel,
+  defaultReasoningEffortForModel,
+  findChatModel,
+  normalizeReasoningEffort,
+} from '@velin/contracts/chat'
+import type { ChatModelId, ReasoningEffortId } from '@velin/contracts/chat'
 import type { AppearanceMode, InterfaceFontScale } from './types'
 import {
   preferenceStorageKeys,
   readStoredBoolean,
   readStoredChoice,
+  readStoredChoiceValue,
+  reasoningEffortStorageKey,
   storePreference,
 } from './storage'
 
@@ -27,6 +37,41 @@ export function usePreferences() {
   )
   const [edgeRevealEnabled, setEdgeRevealEnabled] = useState(() =>
     readStoredBoolean(preferenceStorageKeys.edgeRevealEnabled, true),
+  )
+  const [chatModel, setChatModelState] = useState<ChatModelId>(() =>
+    readStoredChoice(
+      preferenceStorageKeys.chatModel,
+      chatModelIds,
+      defaultChatModel,
+    ),
+  )
+  const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffortId>(
+    () => {
+      const model = findChatModel(chatModel)
+      const stored = readStoredChoiceValue(
+        reasoningEffortStorageKey(chatModel),
+        model.supportedReasoningEfforts,
+      )
+      return normalizeReasoningEffort(
+        model,
+        stored ?? defaultReasoningEffortForModel(model),
+      )
+    },
+  )
+  const setChatModel = useCallback((modelId: ChatModelId) => {
+    const model = findChatModel(modelId)
+    const remembered = readStoredChoiceValue(
+      reasoningEffortStorageKey(modelId),
+      model.supportedReasoningEfforts,
+    )
+    setChatModelState(modelId)
+    setReasoningEffort((current) =>
+      normalizeReasoningEffort(model, remembered ?? current),
+    )
+  }, [])
+  const effectiveReasoningEffort = normalizeReasoningEffort(
+    findChatModel(chatModel),
+    reasoningEffort,
   )
   useLayoutEffect(() => {
     const root = document.documentElement
@@ -61,6 +106,15 @@ export function usePreferences() {
     storePreference(preferenceStorageKeys.edgeRevealEnabled, edgeRevealEnabled)
   }, [edgeRevealEnabled])
 
+  useEffect(() => {
+    storePreference(preferenceStorageKeys.chatModel, chatModel)
+  }, [chatModel])
+  useEffect(() => {
+    storePreference(
+      reasoningEffortStorageKey(chatModel),
+      effectiveReasoningEffort,
+    )
+  }, [chatModel, effectiveReasoningEffort])
   return {
     appearanceMode,
     setAppearanceMode,
@@ -70,5 +124,9 @@ export function usePreferences() {
     setSendOnEnter,
     edgeRevealEnabled,
     setEdgeRevealEnabled,
+    chatModel,
+    setChatModel,
+    reasoningEffort: effectiveReasoningEffort,
+    setReasoningEffort,
   }
 }

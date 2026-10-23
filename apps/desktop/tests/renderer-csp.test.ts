@@ -107,7 +107,7 @@ test('renderer development entry serves the shared font CSS and referenced WOFF2
   const css = await response.text()
   const fonts = [
     ...css.matchAll(
-      /url\(["']?([^\s)"']*(han-sans-common|inter-latin-normal|inter-latin-italic)-[^\s)"']*\.woff2)["']?\)/g,
+      /url\(["']([^"']*(han-sans-common|inter-latin-normal|inter-latin-italic)-[^"']*\.woff2)["']\)/g,
     ),
   ]
   assert.deepEqual(fonts.map((match) => match[2]).sort(), [

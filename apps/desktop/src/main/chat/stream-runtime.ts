@@ -1,4 +1,5 @@
-import { errorMessage } from '@velin/contracts/error-copy'
+import { chatLimits, chatTimeouts } from '@velin/contracts/policy'
+import { errorMessage, UserFacingError } from '@velin/contracts/error-copy'
 import { createParser } from 'eventsource-parser'
 import type {
   ChatEvent,
@@ -35,6 +36,11 @@ type RuntimeDependencies = {
   onUnauthorized: () => void
   request?: typeof fetch
   timeoutMs?: number
+  captureScope?: () => {
+    isCurrent: () => boolean
+    signal?: AbortSignal
+    cookie?: string
+  }
 }
 
 export class ChatStreamRuntime {
@@ -95,9 +101,10 @@ export class ChatStreamRuntime {
   private async run(task: ChatTask) {
     const { request, emit, controller } = task
     let terminal = false
+    const scope = this.dependencies.captureScope?.()
     const timeout = setTimeout(
       () => controller.abort('timeout'),
-      this.dependencies.timeoutMs ?? 130_000,
+      this.dependencies.timeoutMs ?? chatTimeouts.transportMs,
     )
 
     try {
@@ -105,25 +112,35 @@ export class ChatStreamRuntime {
         this.dependencies.endpoint,
         {
           method: 'POST',
+          redirect: 'error',
+          credentials: 'omit',
           headers: {
             'Content-Type': 'application/json',
             Accept: 'text/event-stream',
-            Cookie: this.dependencies.getCookie(),
+            Cookie: scope?.cookie ?? this.dependencies.getCookie(),
           },
-          body: JSON.stringify(request),
-          signal: controller.signal,
+          body: JSON.stringify({
+            ...request,
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          }),
+          signal: scope?.signal
+            ? AbortSignal.any([scope.signal, controller.signal])
+            : controller.signal,
         },
       )
 
-      if (task.stopped) {
+      if (task.stopped || (scope && !scope.isCurrent())) {
         await response.body?.cancel()
         return
       }
       if (!response.ok) {
         const body: unknown = await response.json().catch(() => null)
         if (task.stopped) return
-        if (response.status === 401) this.dependencies.onUnauthorized()
-        throw new Error(readErrorMessage(body, '发送消息失败，请稍后重试。'))
+        if (response.status === 401 && (!scope || scope.isCurrent()))
+          this.dependencies.onUnauthorized()
+        throw new UserFacingError(
+          readErrorMessage(body, '发送消息失败，请稍后重试。'),
+        )
       }
 
       if (
@@ -131,15 +148,21 @@ export class ChatStreamRuntime {
         !response.headers.get('content-type')?.startsWith('text/event-stream')
       ) {
         await response.body?.cancel().catch(() => {})
-        throw new Error('模型服务返回了无效的流式响应。')
+        throw new UserFacingError('模型服务返回了无效的流式响应。')
       }
 
       let messageId: string | null = null
       const decoder = new TextDecoder()
       const parser = createParser({
-        maxBufferSize: 64 * 1024,
+        maxBufferSize: chatLimits.streamBufferCharacters,
         onEvent: (message) => {
-          if (message.event !== 'chat' || task.stopped || terminal) return
+          if (
+            message.event !== 'chat' ||
+            task.stopped ||
+            terminal ||
+            (scope && !scope.isCurrent())
+          )
+            return
           let value: unknown
           try {
             value = JSON.parse(message.data)
@@ -157,7 +180,16 @@ export class ChatStreamRuntime {
 
           if ('messageId' in event && event.messageId) {
             if (messageId && messageId !== event.messageId) return
-            if (event.type === 'text-delta' && !messageId) return
+            if (
+              [
+                'text-delta',
+                'reasoning-delta',
+                'context-ready',
+                'message-complete',
+              ].includes(event.type) &&
+              !messageId
+            )
+              return
             messageId = event.messageId
           }
           if (
@@ -187,10 +219,10 @@ export class ChatStreamRuntime {
       parser.reset({ consume: true })
 
       if (!terminal && !task.stopped) {
-        throw new Error('模型服务连接提前中断，请重试。')
+        throw new UserFacingError('模型服务连接提前中断，请重试。')
       }
     } catch (error) {
-      if (!task.stopped && !terminal) {
+      if (!task.stopped && !terminal && (!scope || scope.isCurrent())) {
         this.release(task)
         emit({
           type: 'error',
