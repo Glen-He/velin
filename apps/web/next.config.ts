@@ -5,7 +5,19 @@ const config: NextConfig = {
   poweredByHeader: false,
   devIndicators: false,
   transpilePackages: ['@velin/ui', '@velin/contracts'],
+  // OCR 语言包由 Node 读取本地数据，不能把训练文件当作 Route 模块打包。
+  serverExternalPackages: [
+    'pg-boss',
+    '@tesseract.js-data/eng',
+    '@tesseract.js-data/chi_sim',
+  ],
   distDir: process.env.NODE_ENV === 'development' ? '.next-dev' : '.next',
+  typescript: {
+    tsconfigPath:
+      process.env.NODE_ENV === 'development'
+        ? 'tsconfig.dev.json'
+        : 'tsconfig.json',
+  },
   async headers() {
     return [
       {
@@ -13,8 +25,6 @@ const config: NextConfig = {
         headers: [
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'X-Frame-Options', value: 'DENY' },
-          // 此策略仅限制嵌入，不代表已部署 script-src / style-src 内容策略。
-          { key: 'Content-Security-Policy', value: "frame-ancestors 'none'" },
           { key: 'Cross-Origin-Resource-Policy', value: 'same-origin' },
           { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
           { key: 'Origin-Agent-Cluster', value: '?1' },

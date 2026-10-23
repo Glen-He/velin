@@ -1,0 +1,3 @@
+drop index chat_request_usage_user_time_idx;
+drop index chat_request_usage_running_user_idx;
+drop table chat_quota_day;

@@ -1,6 +1,7 @@
 import { createServer } from 'node:http'
 import next from 'next'
-import type { Pool } from 'pg'
+import { Pool } from 'pg'
+import { assertDatabaseSchema } from '../src/lib/database/schema'
 import { config } from '../src/lib/config'
 import { logger } from '../src/lib/logging'
 import {
@@ -13,6 +14,16 @@ if (mode !== 'development' && mode !== 'production')
   throw new Error('Server mode must be development or production.')
 if (process.env.NODE_ENV !== mode)
   throw new Error('NODE_ENV must match the server mode.')
+const startupDatabase = new Pool({
+  connectionString: config.databaseUrl,
+  connectionTimeoutMillis: 5_000,
+  statement_timeout: 10_000,
+})
+try {
+  await assertDatabaseSchema(startupDatabase)
+} finally {
+  await startupDatabase.end()
+}
 const server = createServer((request, response) => {
   delete request.headers[clientAddressHeader]
   const address = trustedClientAddress(

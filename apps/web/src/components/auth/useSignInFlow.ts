@@ -51,7 +51,11 @@ export function useSignInFlow(electronQuery: Record<string, string>) {
     refetch: refetchSession,
   } = authClient.useSession()
   const [mode, setMode] = useState<AuthMode>(
-    electronQuery.mode === 'sign-up' ? 'sign-up' : 'password',
+    electronQuery.challenge === 'two-factor'
+      ? 'two-factor'
+      : electronQuery.mode === 'sign-up'
+        ? 'sign-up'
+        : 'password',
   )
   const [capabilities, setCapabilities] = useState(fallbackCapabilities)
   const [email, setEmail] = useState('')
@@ -277,13 +281,18 @@ export function useSignInFlow(electronQuery: Record<string, string>) {
         setMessage('验证码已发送，有效期 5 分钟。')
         return
       }
-      await action.result(
+      const data = await action.result(
         authClient.signIn.emailOtp({
           email,
           otp,
           fetchOptions: { query: electronQuery, signal: action.signal },
         }),
       )
+      if (data && 'twoFactorRedirect' in data && data.twoFactorRedirect) {
+        changeMode('two-factor')
+        setMessage('请输入验证器中的动态验证码。')
+        return
+      }
       await finishElectronAuthentication(action)
     }, '验证码登录失败，请稍后重试。')
   }

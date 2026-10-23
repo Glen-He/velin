@@ -92,6 +92,29 @@ test(
         .map((value) => value.split(';', 1)[0])
         .join('; ')
       assert.ok(cookie)
+      // 穿过真实 Node/Next HTTP 入口，非法文本不能占用模型额度。
+      const requestId = crypto.randomUUID()
+      const invalidMessage = await fetch(`${baseUrl}/api/chat/stream`, {
+        method: 'POST',
+        headers: { cookie, 'content-type': 'application/json' },
+        body: JSON.stringify({
+          requestId,
+          conversationId: crypto.randomUUID(),
+          userMessageId: crypto.randomUUID(),
+          content: 'invalid\u0000',
+        }),
+      })
+      assert.equal(invalidMessage.status, 400)
+      assert.ok(invalidMessage.headers.get('x-request-id'))
+      assert.equal(
+        (
+          await databasePool.query(
+            'select 1 from chat_request_usage where request_id=$1',
+            [requestId],
+          )
+        ).rowCount,
+        0,
+      )
       for (const path of [
         '/security',
         '/security/passkeys',
@@ -103,13 +126,25 @@ test(
           redirect: 'manual',
         })
         assert.equal(response.status, 200, path)
-        assert.equal(
-          response.headers.get('content-security-policy'),
-          "frame-ancestors 'none'",
+        const policy = response.headers.get('content-security-policy') ?? ''
+        assert.match(policy, /frame-ancestors 'none'/, path)
+        const nonce = policy.match(
+          /script-src 'self' 'nonce-([^']+)' 'strict-dynamic'/,
+        )?.[1]
+        assert.ok(nonce, path)
+        assert.doesNotMatch(
+          policy,
+          /unsafe-eval|script-src[^;]*unsafe-inline/,
           path,
         )
         assert.equal(response.headers.get('x-frame-options'), 'DENY', path)
         const html = await response.text()
+        for (const script of html.matchAll(/<script\b[^>]*>/g)) {
+          assert.ok(
+            script[0].includes(`nonce="${nonce}"`),
+            script[0].slice(0, 100),
+          )
+        }
         assert.doesNotMatch(
           html,
           /Missing getServerSnapshot|Switched to client rendering|<template[^>]*data-(?:msg|dgst)=/,

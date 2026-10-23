@@ -70,7 +70,7 @@ export function AuthField({
           aria-label={floating ? inputProps['aria-label'] : label}
           aria-invalid={error ? true : inputProps['aria-invalid']}
           aria-describedby={error ? `${id}-error` : undefined}
-          className={`auth-field-input${error ? ' is-error' : ''}${
+          className={`field-input auth-field-input${error ? ' is-error' : ''}${
             trailingAction ? ' has-trailing-action' : ''
           }${code ? ' is-code' : ''}`}
           placeholder={floating ? focusHint || ' ' : label}

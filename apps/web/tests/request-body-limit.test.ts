@@ -129,3 +129,83 @@ test('actual HTTP chunked upload receives a localized 413 and preserves normal r
     )
   }
 })
+
+test(
+  'stalled request bodies time out without waiting for an uncooperative cancel callback',
+  { timeout: 2_000 },
+  async () => {
+    let cancelled = false
+    const body = new ReadableStream<Uint8Array>({
+      cancel() {
+        cancelled = true
+        return new Promise<void>(() => {})
+      },
+    })
+    const request = new Request('http://localhost/api/chat/stream', {
+      method: 'POST',
+      body,
+      duplex: 'half',
+    } as RequestInit)
+    const result = await limitRequestBody(request, 10)
+    assert.ok(result instanceof Response)
+    assert.equal(result.status, 408)
+    assert.equal((await result.json()).error, 'request_timeout')
+    assert.equal(cancelled, true)
+  },
+)
+
+test('parent cancellation and broken streams never reach application parsing', async () => {
+  const controller = new AbortController()
+  const request = new Request('http://localhost/api/chat/stream', {
+    method: 'POST',
+    signal: controller.signal,
+    body: new ReadableStream<Uint8Array>(),
+    duplex: 'half',
+  } as RequestInit)
+  const pending = limitRequestBody(request)
+  controller.abort()
+  const cancelled = await pending
+  assert.ok(cancelled instanceof Response)
+  assert.equal(cancelled.status, 408)
+  assert.equal((await cancelled.json()).error, 'request_cancelled')
+  const broken = await limitRequestBody(
+    new Request('http://localhost/api/chat/stream', {
+      method: 'POST',
+      body: new ReadableStream<Uint8Array>({
+        start(stream) {
+          stream.error(new Error('Truncated source.'))
+        },
+      }),
+      duplex: 'half',
+    } as RequestInit),
+  )
+  assert.ok(broken instanceof Response)
+  assert.equal(broken.status, 400)
+})
+
+test('fragmented bodies preserve every byte across coalesced buffer boundaries', async () => {
+  const original = Uint8Array.from(
+    { length: 150_003 },
+    (_, index) => index % 251,
+  )
+  let offset = 0
+  const body = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      if (offset >= original.length) {
+        controller.close()
+        return
+      }
+      controller.enqueue(original.subarray(offset, offset + 37))
+      offset += 37
+    },
+  })
+  const bounded = await limitRequestBody(
+    new Request('http://localhost/api/chat/stream', {
+      method: 'POST',
+      body,
+      duplex: 'half',
+    } as RequestInit),
+  )
+  assert.ok(bounded instanceof Request)
+  assert.deepEqual(new Uint8Array(await bounded.arrayBuffer()), original)
+})

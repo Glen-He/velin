@@ -166,6 +166,9 @@ p {
 }
 
 .auth-field {
+  --auth-action-inset: calc(
+    (var(--control-field-height) - var(--control-icon-default)) / 2
+  );
   --auth-field-background: var(--color-canvas);
   --auth-field-page-background: var(--color-canvas);
   position: relative;
@@ -179,20 +182,10 @@ p {
 }
 
 .auth-field-input {
+  --field-inset-start: 45px;
   position: relative;
   z-index: 1;
-  width: 100%;
-  height: var(--control-field-height);
-  padding: 0 var(--space-7) 0 44px;
-  border: 1px solid var(--color-border-control);
-  border-radius: var(--web-radius-field);
-  outline: 0;
   background: var(--auth-field-background);
-  color: inherit;
-  font-size: var(--type-input);
-  transition:
-    border-color var(--motion-duration-feedback) ease,
-    background-color var(--motion-duration-feedback) ease;
 }
 
 .auth-field-input::placeholder {
@@ -202,13 +195,6 @@ p {
 
 .auth-field-input:focus::placeholder {
   color: var(--color-secondary);
-}
-
-.auth-field-input:focus,
-.auth-field-input:focus-visible {
-  border-color: var(--color-blue);
-  outline: 0;
-  box-shadow: none;
 }
 
 .auth-field-input:is(:autofill, :-webkit-autofill),
@@ -245,7 +231,7 @@ p {
 }
 
 .auth-field-input.has-trailing-action {
-  padding-right: 44px;
+  --field-inset-end: 45px;
 }
 
 .auth-field-input.has-trailing-action + .auth-floating-label {
@@ -266,15 +252,18 @@ p {
 .auth-field-action {
   position: absolute;
   z-index: 4;
-  top: 4px;
-  right: 4px;
+  top: var(--auth-action-inset);
+  right: var(--auth-action-inset);
   width: var(--control-icon-default);
   height: var(--control-icon-default);
   display: grid;
   place-items: center;
   padding: 0;
   border: 0;
-  border-radius: var(--web-radius-control);
+  border-radius: max(
+    0px,
+    calc(var(--surface-radius-field) - var(--auth-action-inset))
+  );
   background: transparent;
   color: var(--color-icon-muted);
   cursor: pointer;

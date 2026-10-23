@@ -144,7 +144,7 @@ export function SecurityDialog({
     <span className={send ? 'code-field has-send' : 'code-field'}>
       <input
         ref={codeRef}
-        className="web-field"
+        className="field-input web-field"
         autoComplete={channel === 'backupCode' ? 'off' : 'one-time-code'}
         inputMode={channel === 'backupCode' ? 'text' : 'numeric'}
         maxLength={channel === 'backupCode' ? 128 : 6}
@@ -467,7 +467,7 @@ export function SecurityDialog({
                     <div className="field-row">
                       <input
                         ref={passwordRef}
-                        className="web-field"
+                        className="field-input web-field"
                         type="email"
                         autoComplete="email"
                         required

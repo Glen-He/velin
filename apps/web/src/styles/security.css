@@ -112,25 +112,27 @@ html:has(.security-page) {
 }
 
 .code-field.has-send .web-field {
-  padding-right: 88px;
+  --field-inset-end: 89px;
 }
 
 .code-field.has-toggle .web-field {
-  padding-right: var(--space-15);
+  --field-inset-end: calc(var(--space-15) + 1px);
 }
 
 .code-field .field-send {
   position: absolute;
-  top: 1px;
-  right: 1px;
-  bottom: 1px;
+  top: var(--line-width-focus);
+  right: var(--line-width-focus);
+  bottom: var(--line-width-focus);
   width: 84px;
   display: grid;
   place-items: center;
   padding: 0;
   border: 0;
   border-left: 1px solid var(--color-border-control);
-  border-radius: 0 var(--web-radius-field) var(--web-radius-field) 0;
+  border-radius: 0
+    max(0px, calc(var(--surface-radius-field) - var(--line-width-focus)))
+    max(0px, calc(var(--surface-radius-field) - var(--line-width-focus))) 0;
   background: transparent;
   color: var(--color-blue-text);
   cursor: pointer;
@@ -237,25 +239,6 @@ html:has(.security-page) {
   display: flex;
   align-items: center;
   gap: var(--space-6);
-}
-
-.web-field {
-  min-width: 0;
-  width: 100%;
-  height: var(--control-button-compact);
-  padding: 0 13px;
-  border: 1px solid var(--color-border-control);
-  border-radius: var(--web-radius-field);
-  outline: 0;
-  background: var(--color-canvas);
-  color: var(--color-ink);
-  font-size: var(--type-body);
-  transition: border-color var(--motion-duration-feedback) ease;
-}
-
-.web-field:focus {
-  border-color: var(--color-blue);
-  box-shadow: none;
 }
 
 .panel-hint {

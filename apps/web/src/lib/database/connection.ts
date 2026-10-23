@@ -20,6 +20,9 @@ export const databasePool =
     max: 10,
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 5_000,
+    statement_timeout: 15_000,
+    lock_timeout: 5_000,
+    idle_in_transaction_session_timeout: 30_000,
   })
 
 if (!runtime.velinDatabasePool) {

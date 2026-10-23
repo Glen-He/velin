@@ -1,0 +1,3 @@
+drop index chat_pdf_page_cache_user_updated_at_idx;
+
+drop index chat_pdf_page_cache_updated_at_idx;

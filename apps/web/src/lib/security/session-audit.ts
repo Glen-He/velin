@@ -1,7 +1,7 @@
 import { databasePool } from '../database/connection'
 import type { VerificationMethod } from '@velin/contracts/security'
 
-export type AuthMethod = 'password' | VerificationMethod
+export type AuthMethod = 'password' | 'google' | VerificationMethod
 
 // 登录证据仅用于审计，不能授权后续写入。
 export async function recordLoginMethod(

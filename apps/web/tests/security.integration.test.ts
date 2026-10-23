@@ -18,6 +18,7 @@ if (enabled) {
   process.env.BETTER_AUTH_SECRET =
     'velin-integration-secret-with-at-least-32-characters'
   process.env.APP_URL = 'http://localhost:3000'
+  process.env.PASSKEY_RP_ID = 'localhost'
   process.env.NODE_ENV = 'test'
   process.env.EMAIL_TRANSPORT = 'console'
 }
@@ -91,12 +92,23 @@ test(
     let first: Identity
     let second: Identity
     let otherUser: Identity
+    const originalFetch = globalThis.fetch
     before(async () => {
+      // 隔离外部泄露口令服务，HTTP/凭据写入仍走真实业务边界。
+      globalThis.fetch = async (input, init) => {
+        const url = input instanceof Request ? input.url : String(input)
+        if (url.startsWith('https://api.pwnedpasswords.com/range/'))
+          return new Response('00000000000000000000000000000000000:0', {
+            headers: { 'content-type': 'text/plain' },
+          })
+        return originalFetch(input, init)
+      }
       first = await fixture(`refactor-${crypto.randomUUID()}@example.test`)
       second = await login(first.userId, first.email)
       otherUser = await fixture(`refactor-${crypto.randomUUID()}@example.test`)
     })
     after(async () => {
+      globalThis.fetch = originalFetch
       await db.query('delete from "rateLimit" where key = ANY($1)', [
         ids.flatMap((id) =>
           ['send', 'verify', 'passkey-options'].map(
@@ -621,10 +633,11 @@ test(
           await operationGrants.consume({ ...first, ...intent, id: grant.id }),
           false,
         )
-        assert.ok(
+        assert.equal(
           (await ctx.internalAdapter.listSessions(first.userId)).some(
             (session) => session.id === remainingSession.id,
           ),
+          false,
         )
         assert.equal(
           await operationGrants.consume({

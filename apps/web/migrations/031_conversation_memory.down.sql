@@ -1,0 +1,11 @@
+alter table chat_request_usage drop column context_output_tokens, drop column context_input_tokens;
+alter table chat_message drop column context_metadata;
+drop table chat_document_chunk;
+drop table chat_memory_suppression;
+drop table chat_memory;
+drop table chat_memory_preference;
+drop table chat_branch;
+drop table chat_context_summary;
+drop index chat_message_active_sequence_idx;
+alter table chat_message drop column active;
+alter table chat_conversation drop column context_revision;

@@ -2,6 +2,21 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { createChatEventStream } from '../src/lib/chat/event-stream'
 
+test('a stalled consumer cannot indefinitely hold the generation lifecycle', async () => {
+  const stream = createChatEventStream(new AbortController().signal, 5)
+  await assert.rejects(
+    stream.write({
+      type: 'error',
+      requestId: crypto.randomUUID(),
+      conversationId: crypto.randomUUID(),
+      message: '连接中断。',
+    }),
+    /stalled/,
+  )
+  assert.equal(stream.signal.aborted, true)
+  await stream.close()
+})
+
 test('native SSE keeps event identity and terminates after completion', async () => {
   const stream = createChatEventStream(new AbortController().signal)
   const text = stream.response.text()
@@ -28,6 +43,18 @@ test('consumer cancellation aborts upstream generation even before the first chu
   const stream = createChatEventStream(new AbortController().signal)
   await stream.response.body!.cancel()
   await Promise.resolve()
+  assert.equal(stream.signal.reason, 'client-disconnected')
+  await stream.close()
+})
+
+test('idle SSE heartbeats keep the connection alive and stop on cancellation', async () => {
+  const stream = createChatEventStream(new AbortController().signal, 1_000, 5)
+  const reader = stream.response.body!.getReader()
+  assert.equal(
+    new TextDecoder().decode((await reader.read()).value),
+    ': keep-alive\n\n',
+  )
+  await reader.cancel()
   assert.equal(stream.signal.reason, 'client-disconnected')
   await stream.close()
 })

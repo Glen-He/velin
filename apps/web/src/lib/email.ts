@@ -51,6 +51,7 @@ const smtpTransport =
         host: config.email.smtp.host,
         port: config.email.smtp.port,
         secure: config.email.smtp.secure,
+        requireTLS: config.isProduction && !config.email.smtp.secure,
         auth: {
           user: config.email.smtp.user,
           pass: config.email.smtp.password,

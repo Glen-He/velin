@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: 'Velin',
   description: 'Velin 账号与安全管理',
 }
+export const dynamic = 'force-dynamic'
 export default function Layout({ children }: { children: ReactNode }) {
   return <Document theme="light">{children}</Document>
 }

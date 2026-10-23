@@ -5,7 +5,7 @@ import { electron } from '@better-auth/electron'
 import { passkey } from '@better-auth/passkey'
 import { betterAuth } from 'better-auth'
 import { APIError, createAuthMiddleware } from 'better-auth/api'
-import { emailOTP, haveIBeenPwned, twoFactor } from 'better-auth/plugins'
+import { emailOTP, haveIBeenPwned } from 'better-auth/plugins'
 import { config } from '../config'
 import { databasePool } from '../database/connection'
 import { rememberDevCode, sendAuthenticationEmail } from '../email'
@@ -30,6 +30,8 @@ import {
 import { setPasswordPath, setPasswordPlugin } from '../security/set-password'
 import { requiredDeliveryPlugin } from '../security/required-delivery'
 import { clientAddressHeader } from '../http/client-address'
+import { multiFactorAuthentication } from './mfa'
+import { assertAccountEnabled } from './account-access'
 
 // 登录方式只作记录，敏感操作另需一次性操作授权。
 const loginMethodByPath: Record<string, AuthMethod> = {
@@ -37,6 +39,8 @@ const loginMethodByPath: Record<string, AuthMethod> = {
   '/sign-in/email-otp': 'emailOtp',
   '/passkey/verify-authentication': 'passkey',
   '/two-factor/verify-totp': 'totp',
+  '/two-factor/verify-backup-code': 'backupCode',
+  '/callback/google': 'google',
 }
 
 // 凭据变更后作废该用户尚未消费的操作授权。
@@ -135,6 +139,16 @@ export const auth = betterAuth({
         validateNewPassword(context.body[passwordField])
       }
 
+      if (context.path === '/change-password' && isRecord(context.body)) {
+        // 会话撤销是服务端策略，不能由调用者省略或关闭。
+        return {
+          context: {
+            ...context,
+            body: { ...context.body, revokeOtherSessions: true },
+          },
+        }
+      }
+
       if (context.path === '/sign-up/email' && isRecord(context.body)) {
         // Better Auth 邮箱入口要求 name，最终名称仅由服务端赋值。
         return {
@@ -195,6 +209,14 @@ export const auth = betterAuth({
     }),
   },
   databaseHooks: {
+    session: {
+      create: {
+        before: async (session) => {
+          await assertAccountEnabled(session.userId)
+          return { data: session }
+        },
+      },
+    },
     user: {
       create: {
         before: async (user) => ({
@@ -281,6 +303,7 @@ export const auth = betterAuth({
         '这个密码已出现在公开泄露数据中，请换一个更安全的密码。',
     }),
     setPasswordPlugin,
+    multiFactorAuthentication,
     electron({
       clientID: 'velin-desktop',
       codeExpiresIn: 300,
@@ -342,21 +365,6 @@ export const auth = betterAuth({
       authenticatorSelection: {
         residentKey: 'preferred',
         userVerification: 'required',
-      },
-    }),
-    twoFactor({
-      issuer: 'Velin',
-      skipVerificationOnEnable: false,
-      trustDeviceMaxAge: 60 * 60 * 24 * 30,
-      backupCodeOptions: {
-        amount: 10,
-        length: 10,
-        storeBackupCodes: 'encrypted',
-      },
-      accountLockout: {
-        enabled: true,
-        maxFailedAttempts: 5,
-        durationSeconds: 15 * 60,
       },
     }),
   ],

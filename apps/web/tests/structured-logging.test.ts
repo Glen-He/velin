@@ -7,6 +7,7 @@ test('structured logs keep English events and whitelist error fields', () => {
   const logger = createLogger((_level, line) => lines.push(line))
   const error = Object.assign(new Error('密码 secret-value'), {
     code: 'ECONNRESET',
+    status: 503,
     cookie: 'session-secret',
     password: 'password-secret',
   })
@@ -14,7 +15,11 @@ test('structured logs keep English events and whitelist error fields', () => {
   const entry = JSON.parse(lines[0])
   assert.equal(entry.event, 'database.pool_error')
   assert.equal(entry.level, 'error')
-  assert.deepEqual(entry.error, { name: 'Error', code: 'ECONNRESET' })
+  assert.deepEqual(entry.error, {
+    name: 'Error',
+    code: 'ECONNRESET',
+    status: 503,
+  })
   assert.doesNotMatch(lines[0], /secret|密码/)
 })
 

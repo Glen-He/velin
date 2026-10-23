@@ -21,7 +21,35 @@ export async function createApiFixture() {
   const passkey = await import(
     '../src/app/api/security/step-up/passkey-verify/route'
   )
+  const conversations = await import('../src/app/api/chat/conversations/route')
+  const conversation = await import(
+    '../src/app/api/chat/conversations/[conversationId]/route'
+  )
+  const messages = await import(
+    '../src/app/api/chat/conversations/[conversationId]/messages/route'
+  )
+  const order = await import('../src/app/api/chat/conversations/order/route')
+  const attachments = await import('../src/app/api/chat/attachments/route')
+  const attachment = await import(
+    '../src/app/api/chat/attachments/[attachmentId]/route'
+  )
+  const attachmentReprocess = await import(
+    '../src/app/api/chat/attachments/[attachmentId]/reprocess/route'
+  )
+  const attachmentCancel = await import(
+    '../src/app/api/chat/attachments/[attachmentId]/cancel/route'
+  )
+  const memory = await import('../src/app/api/chat/memory/route')
+  const stream = await import('../src/app/api/chat/stream/route')
+  const versions = await import(
+    '../src/app/api/chat/conversations/[conversationId]/versions/route'
+  )
   const endpoints: Record<string, (request: Request) => Promise<Response>> = {
+    '/api/chat/stream': (request) => stream.POST(request, undefined),
+    '/api/chat/memory': (request) =>
+      request.method === 'GET'
+        ? memory.GET(request, undefined)
+        : memory.POST(request, undefined),
     '/api/auth/capabilities': (request) => capabilities.GET(request, undefined),
     '/api/avatars': (request) => avatars.POST(request, undefined),
     '/api/security/requirements': (request) =>
@@ -58,6 +86,47 @@ export async function createApiFixture() {
         return avatar.GET(request, {
           params: Promise.resolve({ userId: path.split('/').at(-1)! }),
         })
+      if (path === '/api/chat/conversations')
+        return conversations.GET(request, undefined)
+      if (path === '/api/chat/conversations/order')
+        return order.PUT(request, undefined)
+      if (path === '/api/chat/attachments')
+        return request.method === 'GET'
+          ? attachments.GET(request, undefined)
+          : attachments.POST(request, undefined)
+      if (path.startsWith('/api/chat/attachments/')) {
+        const segments = path.split('/')
+        const attachmentId = segments[4]!
+        const context = { params: Promise.resolve({ attachmentId }) }
+        if (segments[5] === 'reprocess') {
+          return attachmentReprocess.POST(request, context)
+        }
+        if (segments[5] === 'cancel') {
+          return attachmentCancel.POST(request, context)
+        }
+        if (request.method === 'GET') {
+          return attachment.GET(request, context)
+        }
+        return attachment.DELETE(request, context)
+      }
+      if (path.startsWith('/api/chat/conversations/')) {
+        const segments = path.split('/')
+        const conversationId = segments[4]
+        const context = {
+          params: Promise.resolve({ conversationId }),
+        }
+        if (segments[5] === 'versions')
+          return request.method === 'GET'
+            ? versions.GET(request, context)
+            : versions.POST(request, context)
+        if (segments[5] === 'messages') {
+          return messages.GET(request, context)
+        }
+        if (request.method === 'PATCH') {
+          return conversation.PATCH(request, context)
+        }
+        return conversation.DELETE(request, context)
+      }
       const endpoint = endpoints[path]
       if (endpoint) return endpoint(request)
       if (path.startsWith('/api/auth/')) return auth.POST(request, undefined)

@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { isIP } from 'node:net'
+import { serviceOrigin } from '@velin/contracts/service-url'
 
 const optionalEnvironmentString = (minimumLength = 1) =>
   z.preprocess(
@@ -36,7 +37,7 @@ const environmentSchema = z
     DATABASE_URL: z.url({ protocol: /^postgres(?:ql)?$/ }),
     BETTER_AUTH_SECRET: z.string().min(32),
     APP_URL: z.url().default('http://localhost:3000'),
-    PASSKEY_RP_ID: z.string().min(1).default('localhost'),
+    PASSKEY_RP_ID: optionalEnvironmentString(),
     GOOGLE_CLIENT_ID: optionalEnvironmentString(),
     GOOGLE_CLIENT_SECRET: optionalEnvironmentString(),
     EMAIL_TRANSPORT: z.enum(['console', 'smtp']).default('console'),
@@ -53,8 +54,38 @@ const environmentSchema = z
     CHAT_DAILY_LIMIT_PER_USER: z.coerce.number().int().min(1).default(30),
     CHAT_DAILY_LIMIT_GLOBAL: z.coerce.number().int().min(1).default(300),
     CHAT_MINUTE_LIMIT_PER_USER: z.coerce.number().int().min(1).default(5),
+    CHAT_MAX_OUTPUT_TOKENS: z.coerce
+      .number()
+      .int()
+      .min(256)
+      .max(131_072)
+      .default(65_536),
+    DOCUMENT_CONCURRENCY: z.coerce.number().int().min(1).max(8).default(2),
   })
   .superRefine((environment, context) => {
+    try {
+      const origin = serviceOrigin(
+        environment.APP_URL,
+        environment.NODE_ENV !== 'production',
+      )
+      if (
+        environment.PASSKEY_RP_ID &&
+        environment.PASSKEY_RP_ID !== new URL(origin).hostname
+      ) {
+        context.addIssue({
+          code: 'custom',
+          message: 'PASSKEY_RP_ID must match the APP_URL hostname.',
+          path: ['PASSKEY_RP_ID'],
+        })
+      }
+    } catch {
+      context.addIssue({
+        code: 'custom',
+        message:
+          'APP_URL must be an HTTPS origin, or a loopback HTTP origin in development, without credentials, paths or query parameters.',
+        path: ['APP_URL'],
+      })
+    }
     const hasGoogleClientId = environment.GOOGLE_CLIENT_ID !== undefined
     const hasGoogleClientSecret = environment.GOOGLE_CLIENT_SECRET !== undefined
 
@@ -150,8 +181,12 @@ export const config = {
   trustedProxyAddresses: environment.TRUSTED_PROXY_ADDRESSES,
   databaseUrl: environment.DATABASE_URL,
   authSecret: environment.BETTER_AUTH_SECRET,
-  appUrl: environment.APP_URL.replace(/\/$/, ''),
-  passkeyRpId: environment.PASSKEY_RP_ID,
+  appUrl: serviceOrigin(
+    environment.APP_URL,
+    environment.NODE_ENV !== 'production',
+  ),
+  passkeyRpId:
+    environment.PASSKEY_RP_ID ?? new URL(environment.APP_URL).hostname,
   google:
     environment.GOOGLE_CLIENT_ID && environment.GOOGLE_CLIENT_SECRET
       ? {
@@ -170,11 +205,12 @@ export const config = {
       password: environment.SMTP_PASSWORD,
     },
   },
+  documents: { concurrency: environment.DOCUMENT_CONCURRENCY },
   chat: {
     deepseekApiKey: environment.DEEPSEEK_API_KEY ?? null,
-    model: 'deepseek-flash',
     dailyLimitPerUser: environment.CHAT_DAILY_LIMIT_PER_USER,
     dailyLimitGlobal: environment.CHAT_DAILY_LIMIT_GLOBAL,
     minuteLimitPerUser: environment.CHAT_MINUTE_LIMIT_PER_USER,
+    maxOutputTokens: environment.CHAT_MAX_OUTPUT_TOKENS,
   },
 } as const

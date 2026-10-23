@@ -12,6 +12,7 @@ if (enabled) {
     BETTER_AUTH_SECRET:
       'velin-production-fixture-secret-at-least-32-characters',
     APP_URL: 'https://velin.example.test',
+    PASSKEY_RP_ID: 'velin.example.test',
     GOOGLE_CLIENT_ID: 'fixture-client-id',
     GOOGLE_CLIENT_SECRET: 'fixture-client-secret',
     DEEPSEEK_API_KEY: 'fixture-not-used-for-model-requests',
