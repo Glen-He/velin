@@ -1,6 +1,13 @@
 import { isRecord } from './value.js'
 import { passwordPolicyMessage } from './policy.js'
 
+export class UserFacingError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'UserFacingError'
+  }
+}
+
 const codeCopy: Readonly<Record<string, string>> = {
   INVALID_EMAIL: '请输入有效的邮箱地址。',
   PASSWORD_POLICY_VIOLATION: passwordPolicyMessage,

@@ -23,6 +23,9 @@
 .text-action[data-tone='neutral'] {
   color: var(--color-secondary);
 }
+.text-action[data-tone='danger'] {
+  color: var(--color-danger-text);
+}
 @media (hover: hover) {
   .text-action:hover:not(:disabled) {
     background: var(--color-blue-soft);
@@ -30,6 +33,10 @@
   .text-action[data-tone='neutral']:hover:not(:disabled) {
     background: var(--color-control-hover);
     color: var(--color-ink);
+  }
+  .text-action[data-tone='danger']:hover:not(:disabled) {
+    background: var(--color-danger-soft);
+    color: var(--color-danger-text);
   }
 }
 .text-action:active:not(:disabled) {

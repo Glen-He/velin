@@ -2,8 +2,21 @@ packages:
   - apps/*
   - packages/*
 
+overrides:
+  source-map-js: 1.2.2
+  brace-expansion@5: 5.0.12
+  fast-uri@3: 3.1.8
+  exceljs>uuid: 11.1.1
+  katex: 0.18.2
+  dompurify: 3.4.17
+  next: 16.4.1
+  electron: 44.5.0
+
 allowBuilds:
   electron: true
+  electron-winstaller: false
   esbuild: true
+  tesseract.js: false
 minimumReleaseAgeExclude:
   - nodemailer@10.0.11
+  - officeparser@8.2.0

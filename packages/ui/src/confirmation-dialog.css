@@ -53,20 +53,3 @@
     animation: none;
   }
 }
-
-.account-name-input {
-  width: 100%;
-  height: var(--control-field-height);
-  padding-inline: var(--space-6);
-  border: 1px solid var(--color-border-control);
-  border-radius: var(--surface-radius-field);
-  corner-shape: var(--surface-corner-shape);
-  background: var(--color-canvas);
-  color: var(--color-ink);
-  font-family: var(--font-sans);
-  font-size: var(--type-input);
-}
-.account-name-input:focus-visible {
-  outline: 3px solid var(--color-focus);
-  outline-offset: 2px;
-}

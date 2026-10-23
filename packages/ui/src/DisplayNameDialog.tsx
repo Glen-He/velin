@@ -30,7 +30,7 @@ export function DisplayNameDialog({
         >
           <h2 className="confirmation-title">用户名</h2>
           <input
-            className="account-name-input"
+            className="field-input"
             type="text"
             autoComplete="nickname"
             spellCheck={false}

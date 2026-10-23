@@ -46,7 +46,10 @@
   },
   "overrides": [
     {
-      "files": ["apps/web/src/lib/logging.ts"],
+      "files": [
+        "apps/web/src/lib/logging.ts",
+        "apps/desktop/src/main/logging.ts"
+      ],
       "rules": {
         "no-console": "off"
       }

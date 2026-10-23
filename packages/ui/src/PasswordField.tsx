@@ -17,7 +17,7 @@ export function PasswordField({ label, inputRef, ...props }: Props) {
       <input
         {...props}
         ref={inputRef}
-        className="web-field"
+        className="field-input web-field"
         type={visible ? 'text' : 'password'}
         placeholder={label}
         aria-label={label}

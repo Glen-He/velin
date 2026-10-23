@@ -1,0 +1,77 @@
+/* 普通与聚焦状态使用同一条细边框，只变色，避免切换线宽造成文字移动。 */
+.field-input {
+  --field-stroke: var(--line-width-control);
+  --field-inset-start: var(--space-row);
+  --field-inset-end: var(--space-row);
+  --field-inset-block: var(--space-5);
+  --field-border-color: var(--color-border-control);
+  --field-focus-color: var(--color-blue);
+  display: block;
+  box-sizing: border-box;
+  appearance: none;
+  width: 100%;
+  min-width: 0;
+  height: var(--control-field-height);
+  padding-block: calc(var(--field-inset-block) - var(--field-stroke));
+  padding-inline: calc(var(--field-inset-start) - var(--field-stroke))
+    calc(var(--field-inset-end) - var(--field-stroke));
+  border: var(--field-stroke) solid var(--field-border-color);
+  border-radius: var(--surface-radius-field);
+  corner-shape: var(--surface-corner-shape);
+  outline: none;
+  outline-offset: 0;
+  box-shadow: none;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: var(--type-input);
+  font-weight: var(--weight-regular);
+  line-height: var(--line-height-body);
+  transition: border-color var(--motion-duration-feedback)
+    var(--motion-ease-feedback);
+}
+.field-input:is(:focus, :focus-visible) {
+  border-color: var(--field-focus-color);
+  outline: none;
+  outline-offset: 0;
+  box-shadow: none;
+}
+.field-input[aria-invalid='true'] {
+  --field-border-color: var(--color-danger);
+  --field-focus-color: var(--color-danger);
+}
+.field-input:disabled {
+  color: var(--color-secondary);
+  cursor: default;
+}
+.field-input::placeholder {
+  color: var(--color-secondary);
+}
+.field-input.field-textarea {
+  height: auto;
+  min-height: calc(var(--control-field-height) * 2.5);
+  max-height: 35vh;
+  overflow-y: auto;
+  resize: none;
+}
+/* 搜索是紧凑复合控件，预留边框空间，不改变图标和文字的已有位置。 */
+.field-search {
+  --search-inset-inline: var(--space-7);
+  box-sizing: border-box;
+  padding-inline: calc(var(--search-inset-inline) - var(--line-width-control));
+  border: var(--line-width-control) solid transparent;
+  outline: none;
+}
+.field-search:focus-within {
+  border-color: var(--color-blue);
+  outline: none;
+  box-shadow: none;
+}
+.field-search input {
+  appearance: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .field-input {
+    transition: none;
+  }
+}

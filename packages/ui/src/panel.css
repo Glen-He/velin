@@ -100,6 +100,7 @@
   display: grid;
   place-items: center;
   border-radius: inherit;
+  corner-shape: inherit;
   background: var(--color-avatar-overlay);
   color: var(--color-on-accent);
   opacity: 0;

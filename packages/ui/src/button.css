@@ -38,7 +38,8 @@
   min-width: 0;
 }
 .pill-button[data-variant='secondary'] {
-  background: var(--color-control);
+  border-color: var(--utility-button-border, transparent);
+  background: var(--utility-button-fill, var(--color-control));
   color: var(--color-ink);
 }
 .pill-button[data-variant='outline'] {
@@ -68,6 +69,9 @@
   }
   .pill-button[data-variant='outline']:hover:not(:disabled) {
     border-color: var(--color-border-hover);
+  }
+  .pill-button[data-variant='secondary']:hover:not(:disabled) {
+    border-color: var(--utility-button-hover-border, transparent);
   }
   .pill-button[data-variant='accent']:hover:not(:disabled) {
     background: var(--color-blue);

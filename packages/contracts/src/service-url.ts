@@ -3,7 +3,12 @@ export function serviceOrigin(
   value: string,
   allowLoopbackHttp: boolean,
 ): string {
-  const url = new URL(value)
+  let url: URL
+  try {
+    url = new URL(value)
+  } catch {
+    throw new Error('Service URL is invalid.')
+  }
   const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)
   if (
     value.trim() !== value ||

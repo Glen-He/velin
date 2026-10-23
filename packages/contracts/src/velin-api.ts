@@ -1,9 +1,33 @@
 import type {
+  ChatAttachmentCancelRequest,
+  ChatAttachmentDeleteRequest,
+  ChatAttachmentPickRequest,
+  ChatAttachmentPickResult,
+  ChatAttachmentReprocessRequest,
+  ChatAttachmentStatusRequest,
+  ChatAttachmentUploadRequest,
   ChatEvent,
+  ChatPendingAttachmentsRequest,
+  ChatHistoryDeleteRequest,
+  ChatHistoryLoadRequest,
+  ChatOrderRequest,
+  ChatListRequest,
+  ChatRenameRequest,
   SendMessageRequest,
   StopMessageRequest,
 } from './chat-protocol.js'
+import type {
+  ConversationHistoryPage,
+  ConversationListPage,
+  MessageAttachment,
+} from './chat.js'
 import type { AppMenuAction } from './app-menu-protocol.js'
+import type {
+  MemoryAction,
+  MemoryState,
+  ConversationVersion,
+  ConversationVersionRequest,
+} from './memory.js'
 import type {
   AuthError,
   AuthFlow,
@@ -19,6 +43,14 @@ export type AuthStateListener = (state: AuthState) => void
 export type AuthErrorListener = (error: AuthError) => void
 
 export type VelinApi = {
+  memory: {
+    read: () => Promise<MemoryState>
+    update: (action: MemoryAction) => Promise<MemoryState>
+    versions: (
+      input: ConversationVersionRequest,
+    ) => Promise<ConversationVersion[]>
+    restoreVersion: (input: ConversationVersionRequest) => Promise<void>
+  }
   auth: {
     getState: () => Promise<AuthState>
     requestSignIn: (intent?: AuthIntent, flow?: AuthFlow) => Promise<AuthFlow>
@@ -38,6 +70,34 @@ export type VelinApi = {
     send: (request: SendMessageRequest) => void
     stop: (request: StopMessageRequest) => void
     openExternalLink: (url: string) => Promise<void>
+    listConversations: (
+      request?: ChatListRequest,
+    ) => Promise<ConversationListPage>
+    loadConversation: (
+      request: ChatHistoryLoadRequest,
+    ) => Promise<ConversationHistoryPage>
+    deleteConversation: (request: ChatHistoryDeleteRequest) => Promise<void>
+    renameConversation: (request: ChatRenameRequest) => Promise<string>
+    reorderConversations: (request: ChatOrderRequest) => Promise<void>
+    pickAttachments: (
+      request: ChatAttachmentPickRequest,
+    ) => Promise<ChatAttachmentPickResult>
+    listPendingAttachments: (
+      request: ChatPendingAttachmentsRequest,
+    ) => Promise<MessageAttachment[]>
+    uploadAttachment: (
+      request: ChatAttachmentUploadRequest,
+    ) => Promise<MessageAttachment>
+    reprocessAttachment: (
+      request: ChatAttachmentReprocessRequest,
+    ) => Promise<MessageAttachment>
+    getAttachmentStatus: (
+      request: ChatAttachmentStatusRequest,
+    ) => Promise<MessageAttachment>
+    cancelAttachmentProcessing: (
+      request: ChatAttachmentCancelRequest,
+    ) => Promise<void>
+    deleteAttachment: (request: ChatAttachmentDeleteRequest) => Promise<void>
     subscribe: (listener: ChatEventListener) => () => void
   }
   menu: {

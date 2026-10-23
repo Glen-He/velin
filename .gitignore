@@ -26,6 +26,8 @@ next-env.d.ts
 coverage/
 playwright-report/
 test-results/
+vibe_images/
+*.traineddata
 *.log
 *.heapsnapshot
 *.tsbuildinfo

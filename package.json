@@ -8,17 +8,19 @@
     "node": ">=24.20.0 <25"
   },
   "scripts": {
-    "dev": "pnpm --filter @velin/contracts build && concurrently --kill-others-on-fail --names contracts,web,desktop \"pnpm --filter @velin/contracts build --watch\" \"pnpm --filter @velin/web dev\" \"pnpm --filter @velin/desktop dev\"",
-    "dev:web": "pnpm --filter @velin/contracts build && pnpm --filter @velin/web dev",
+    "dev": "pnpm --filter @velin/contracts build && concurrently --kill-others-on-fail --names contracts,web,ocr,desktop \"pnpm --filter @velin/contracts build --watch\" \"pnpm --filter @velin/web dev\" \"pnpm --filter @velin/web ocr:worker\" \"pnpm --filter @velin/desktop dev\"",
+    "dev:web": "pnpm --filter @velin/contracts build && concurrently --kill-others-on-fail --names web,ocr \"pnpm --filter @velin/web dev\" \"pnpm --filter @velin/web ocr:worker\"",
     "dev:desktop": "pnpm --filter @velin/contracts build && pnpm --filter @velin/desktop dev",
     "build": "pnpm --filter @velin/contracts build && pnpm --filter @velin/web build && pnpm --filter @velin/desktop build",
-    "typecheck": "pnpm --filter @velin/contracts build && pnpm --filter @velin/web typecheck && pnpm --filter @velin/desktop typecheck",
+    "typecheck": "pnpm --filter @velin/contracts build && pnpm --filter @velin/web typecheck && pnpm --filter @velin/desktop typecheck && pnpm --filter @velin/web exec tsc -p ../../tsconfig.tools.json",
     "lint": "oxlint .",
     "test": "pnpm --filter @velin/contracts build && pnpm --filter @velin/contracts test && pnpm --filter @velin/ui test && pnpm --filter @velin/desktop test && pnpm --filter @velin/web test",
+    "test:ci": "node --import tsx scripts/verify-ci.ts",
+    "eval:memory": "pnpm --filter @velin/web eval:memory --confirm-cost",
     "db:generate": "pnpm --filter @velin/contracts build && pnpm --filter @velin/web db:generate",
     "db:migrate": "pnpm --filter @velin/web db:migrate",
     "db:rollback": "pnpm --filter @velin/web db:rollback",
-    "start": "pnpm --filter @velin/web start",
+    "start": "concurrently --kill-others-on-fail --names web,ocr \"pnpm --filter @velin/web start\" \"pnpm --filter @velin/web ocr:worker:prod\"",
     "format": "prettier --write apps packages docs AGENTS.md README.md",
     "format:check": "prettier --check apps packages docs AGENTS.md README.md"
   },

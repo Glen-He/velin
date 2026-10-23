@@ -1,4 +1,9 @@
 .velin-modal-root {
+  /* 主界面使用浅色实体入口；弹出卡片的辅助动作统一为描边。
+     由容器决定视觉，不让管理、重试等辅助动作的调用方各自猜测场景。 */
+  --utility-button-fill: transparent;
+  --utility-button-border: var(--color-border-control);
+  --utility-button-hover-border: var(--color-border-hover);
   position: fixed;
   inset: 0;
   width: 100%;
