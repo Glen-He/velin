@@ -1,5 +1,14 @@
 import type { BrowserWindow, Event, WebContents } from 'electron'
-import { fileURLToPath } from 'node:url'
+
+/** 解码 file URL 路径；编码的分隔符含义不明确，直接判为不可信。 */
+function decodedFilePath(url: URL): string | null {
+  if (/%2f|%5c/i.test(url.pathname)) return null
+  try {
+    return decodeURIComponent(url.pathname)
+  } catch {
+    return null
+  }
+}
 
 export function isTrustedRendererUrl(
   value: string,
@@ -13,14 +22,21 @@ export function isTrustedRendererUrl(
       return true
     }
     const entry = new URL(productionEntryUrl)
-    // Chromium 输出了加载后的规范 URL，与 Node pathToFileURL 的百分号编码不总是相同：
-    // Windows 8.3 短路径中的 ~ 会被 Node 编码为 %7E，而 Chromium 保持 ~。
-    // 因此 file URL 按解析后的文件路径比较，其余协议仍按完整 href 比较。
     if (url.protocol !== 'file:' || entry.protocol !== 'file:') {
       return url.href === entry.href
     }
+    // Chromium 返回加载后的规范 URL，与 Node pathToFileURL 的百分号编码不总是相同：
+    // Windows 8.3 短路径中的 ~ 会被 Node 编码为 %7E，而 Chromium 保持 ~。
+    // 因此比较解码后的路径与主机，而不是比较原始 href。
+    const path = decodedFilePath(url)
+    const entryPath = decodedFilePath(entry)
     return (
-      !url.search && !url.hash && fileURLToPath(url) === fileURLToPath(entry)
+      path !== null &&
+      entryPath !== null &&
+      url.host === entry.host &&
+      !url.search &&
+      !url.hash &&
+      path === entryPath
     )
   } catch {
     return false
