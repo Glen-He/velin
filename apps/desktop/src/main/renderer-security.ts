@@ -1,4 +1,5 @@
 import type { BrowserWindow, Event, WebContents } from 'electron'
+import { fileURLToPath } from 'node:url'
 
 export function isTrustedRendererUrl(
   value: string,
@@ -7,11 +8,19 @@ export function isTrustedRendererUrl(
 ) {
   try {
     const url = new URL(value)
+    if (url.username || url.password) return false
+    if (developmentOrigin !== undefined && url.origin === developmentOrigin) {
+      return true
+    }
+    const entry = new URL(productionEntryUrl)
+    // Chromium 输出了加载后的规范 URL，与 Node pathToFileURL 的百分号编码不总是相同：
+    // Windows 8.3 短路径中的 ~ 会被 Node 编码为 %7E，而 Chromium 保持 ~。
+    // 因此 file URL 按解析后的文件路径比较，其余协议仍按完整 href 比较。
+    if (url.protocol !== 'file:' || entry.protocol !== 'file:') {
+      return url.href === entry.href
+    }
     return (
-      !url.username &&
-      !url.password &&
-      ((developmentOrigin !== undefined && url.origin === developmentOrigin) ||
-        url.href === productionEntryUrl)
+      !url.search && !url.hash && fileURLToPath(url) === fileURLToPath(entry)
     )
   } catch {
     return false

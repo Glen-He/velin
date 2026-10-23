@@ -57,6 +57,10 @@ void app.whenReady().then(async () => {
       () => resets++,
     )
     await window.loadFile(file)
+    // Chromium 返回加载后的规范 URL，可能与 Node pathToFileURL 的百分号编码不同，
+    // 因此以实际加载地址为准，并确认它仍满足应用自己的信任规则。
+    const entryUrl = contents.getURL()
+    assert.equal(isTrustedRendererUrl(entryUrl, entry), true)
     // geolocation、camera 与 microphone（映射 media）在 Chromium 中的默认状态是
     // prompt；这里读到 denied，说明真实 session 已装载应用安装的权限检查处理器。
     const states: unknown = await contents.executeJavaScript(
@@ -81,7 +85,7 @@ void app.whenReady().then(async () => {
     )
     const [event] = await navigation
     assert.equal(event.defaultPrevented, true)
-    assert.equal(contents.getURL(), entry)
+    assert.equal(contents.getURL(), entryUrl)
     const beforeReload = resets
     const loaded = once(contents, 'did-finish-load')
     contents.reload()

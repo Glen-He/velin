@@ -15,9 +15,20 @@ test('renderer URL policy rejects other files, credentials, malformed URLs and l
     'invalid',
     'file:///Application/Velin/secret',
     `${entry}?x=1`,
+    `${entry}#fragment`,
+    'file:///Application/Velin/dist%2Findex.html',
     'https://evil.test',
   ])
     assert.equal(isTrustedRendererUrl(url, entry), false)
+  // Node 的 pathToFileURL 把 Windows 8.3 短路径中的 ~ 编码为 %7E，
+  // Chromium 的 getURL 保持 ~；两者指向同一文件，必须判为同一来源。
+  assert.equal(
+    isTrustedRendererUrl(
+      'file:///Application/RUNNER~1/index.html',
+      'file:///Application/RUNNER%7E1/index.html',
+    ),
+    true,
+  )
   const origin = 'http://localhost:5173'
   assert.equal(isTrustedRendererUrl(`${origin}/`, entry, origin), true)
   for (const url of [
