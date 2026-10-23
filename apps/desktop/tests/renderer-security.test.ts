@@ -34,11 +34,16 @@ test('permission requests and checks allow only trusted top-level clipboard writ
     Parameters<Session['setPermissionRequestHandler']>[0]
   >
   let device: NonNullable<Parameters<Session['setDevicePermissionHandler']>[0]>
+  let openWindow: NonNullable<
+    Parameters<WebContents['setWindowOpenHandler']>[0]
+  >
   let url = entry
   const contents = Object.assign(new EventEmitter(), {
     isDestroyed: () => false,
     getURL: () => url,
-    setWindowOpenHandler: () => {},
+    setWindowOpenHandler: (handler: typeof openWindow) => {
+      openWindow = handler
+    },
     session: {
       setPermissionCheckHandler: (handler: typeof check) => {
         check = handler
@@ -98,6 +103,9 @@ test('permission requests and checks allow only trusted top-level clipboard writ
     device!({ deviceType: 'hid', origin: 'file://', device: {}, frame: null }),
     false,
   )
+  assert.deepEqual(openWindow!({} as Parameters<typeof openWindow>[0]), {
+    action: 'deny',
+  })
   contents.emit('did-start-navigation', {
     isMainFrame: false,
     isSameDocument: false,

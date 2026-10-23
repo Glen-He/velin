@@ -76,7 +76,7 @@ VELIN_API_SERVER_URL=https://YOUR_SERVICE_HOST VELIN_UPDATE_URL=https://YOUR_UPD
 
 ## 持续验证
 
-`pnpm --filter @velin/desktop test:native` 在真实 Electron 中使用隔离的临时 profile，验证剪贴板与设备权限、外部导航拦截、刷新与 Renderer 崩溃的任务清理。它不访问真实账号或剪贴板内容，已纳入 Windows/macOS 桌面矩阵；Linux 无显示环境的普通服务端套件不替代此项。
+`pnpm --filter @velin/desktop test:native` 在真实 Electron 中使用隔离的临时 profile，验证应用拒绝的权限、新窗口与外部导航拦截、刷新与 Renderer 崩溃的任务清理；权限允许/拒绝组合由 `tests/renderer-security.test.ts` 覆盖。它不访问真实账号或剪贴板内容，已纳入 Windows/macOS 桌面矩阵；Linux 无显示环境的普通服务端套件不替代此项。
 
 `.github/workflows/verify.yml` 使用最小只读权限、固定 Action commit 和隔离 PostgreSQL。服务端门禁执行 lint、类型、生产依赖审计、真实认证/聊天/OCR、300 页负载、SSR/CSP 与构建；`pnpm test:ci` 缺少隔离数据库时直接失败。OCR 套件串行执行，避免不同 worker 抢走其他测试的任务。桌面矩阵生成 Windows、macOS ARM 的未签名测试目录，产物保留七天；这些产物不能直接作为正式发布包。
 
